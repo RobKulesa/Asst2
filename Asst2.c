@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include<Ctype.h>
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -106,7 +107,17 @@ void *direcHandler(void *argStruct){
                 pthread_create(&(ptr1->thread), NULL, direcHandler,newThrdArg);
                 
             } else if(thrdDirent->d_type == DT_REG){
-                //DO STUFF
+                thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
+                newThrdArg->mut = args->mut;
+                newThrdArg->fileLLHead = args->fileLLHead;
+                newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                
+                ptr1 = thrdHead;
+                while(ptr1->next!=NULL)
+                    ptr1 = ptr1->next;
+                ptr1->next = (thrdNode *)malloc(sizeof(thrdNode));
+                ptr1 = ptr1->next;
+                pthread_create(&(ptr1->thread), NULL, fileHandler,newThrdArg);
             }
         }
             
@@ -143,10 +154,11 @@ void *direcHandler(void *argStruct){
  */
 void *fileHandler(void *argStruct){
     //1
+    
     thrdArg *args = (thrdArg *)argStruct;
     if(!goodFile(args->thrdFilePath))
         return (void *)1;
-    
+    printf("Executing fileHanlder on file: %s\n", args->thrdFilePath);
     //2
     pthread_mutex_lock(args->mut);
 
@@ -165,7 +177,7 @@ void *fileHandler(void *argStruct){
     pthread_mutex_unlock(args->mut);
 
     //5
-    //tokenizeFilePtr(ptr);
+    tokenizeFilePtr(ptr);
 
     //6
     freeThrdArg(args);
@@ -180,11 +192,68 @@ void *fileHandler(void *argStruct){
  * 4. Then compute the discrete probability of each token
  */
 void tokenizeFilePtr(fileNode *ptr){
-    int fd = open(ptr->path, O_RDONLY);
+    printf("Executing tokenizer on %s\n", ptr->path);
+    //Pull data out of the file
+    int fd = open(ptr->path, O_RDWR);
     int fileSize = (int)lseek(fd, (size_t)0, SEEK_END);
     char *buffer = (char *)malloc(fileSize+1);
-    buffer[fileSize] = '\0';
-    int tokenCount = 0;
+    //buffer[fileSize] = '\0';
+    int err = read(fd, (void *)buffer, (size_t)fileSize);
+    printf("FD: %d, fileSize: %d, Read: %d, Buffer: %s\n", fd, fileSize, err, buffer);
+    char currentTok[fileSize];
+    int tokCount = 0;
+
+    //Iterate through buffer
+    tokNode *tokPtrCurr = ptr->tokens;
+    tokNode *tokPtrTemp;
+    int i;
+    int tokIndex;
+    for(i = 0; i < fileSize; i++){
+        tokPtrCurr = ptr->tokens;
+        //Skip white space in the beginning
+        tokIndex = 0;
+        while(i < fileSize && isspace(buffer[i]))
+            i++;
+        //Parse until the next white space is found
+        while(i < fileSize && !isspace(buffer[i])){
+            if(isalpha(buffer[i]) || buffer[i] == '-'){
+                currentTok[tokIndex] = tolower(buffer[i]);
+                tokIndex++;
+            }
+            i++;
+        }
+        //End the token with a null terminator
+        currentTok[tokIndex] = '\0';
+        printf("\t Token: %s\n", currentTok);
+        //Proceed to insert
+        while(tokPtrCurr!=NULL){
+            if(strcmp(currentTok, tokPtrCurr->token) >= 0)
+                break;
+            else
+                tokPtrCurr = tokPtrCurr->next;
+        }
+
+        if(tokPtrCurr==NULL){
+            tokPtrCurr = (tokNode *)malloc(sizeof(tokNode));
+            tokPtrCurr->token = malloc(strlen(currentTok)+1);
+            strcpy(tokPtrCurr->token, currentTok);
+        } else if(strcmp(currentTok, tokPtrCurr->token) == 0){
+            tokPtrCurr->freq += 1;
+        } else if(strcmp(currentTok, tokPtrCurr->token) > 0){
+            tokPtrTemp = tokPtrCurr->next;
+            tokPtrCurr->next = (tokNode *)malloc(sizeof(tokNode));
+            tokPtrCurr->next->freq = 1;
+            tokPtrCurr->next->token = malloc(strlen(currentTok)+1);
+            strcpy(tokPtrCurr->next->token, currentTok);
+            tokPtrCurr->next->next = tokPtrTemp;
+        }
+        tokCount++;
+    }
+    ptr->tokCount =tokCount;
+    for(tokPtrTemp = ptr->tokens; tokPtrTemp!=NULL; tokPtrTemp = tokPtrTemp->next){
+        tokPtrTemp->discreteProb = tokPtrTemp->freq / tokCount;
+    }
+    return;
 }
 
 
@@ -227,10 +296,14 @@ void freeDatastructure(fileNode *headPtr){
     while(ptr!=NULL){
         ptr2 = ptr->tokens;
         while(ptr2!=NULL){
+            printf("%s\t", ptr2->token);
             free(ptr2->token);
             tokTemp = ptr2;
             ptr2 = ptr2->next;
             free(tokTemp);
+        }
+        if(ptr->path != NULL){
+            printf("<---- FILE: %s\n", ptr->path);
         }
         free(ptr->path);
         fTemp = ptr;
@@ -306,9 +379,10 @@ int main(int argc, char** argv){
 
     //8.
     free(mutx);
-
+    freeDatastructure(headPtr);
 
     //!TESTING
+    /*
     printf("\n*******TESTING KEKEKEKEKEKEKEKEK*********\n");
     char* testStr = "TestingFunction/";
     int i;
@@ -326,7 +400,18 @@ int main(int argc, char** argv){
     test2 = "zza";
 
     printf("str1: %s, str2: %s, strcmp: %d, \n", test1, test2, strcmp(test1,test2));
+
+    char testArr[100];
+    for(i = 0; i < 10; i++){
+        testArr[i] = 'a' + i;
+    }
+    testArr[i] = '\0';
+    testArr[i+1] = 'a';
+    printf("str1 is: %s and is len: %d\n", testArr, strlen(testArr));
+
     free(test);
+    */
+
     return 0;
     
 }
