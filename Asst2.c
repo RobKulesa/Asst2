@@ -8,7 +8,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include<ctype.h>
+#include <ctype.h>
+#include <math.h>
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -44,9 +45,9 @@ int goodDirectory(char* path);
 int goodFile(char* path);
 char *concatPath(char* beg, char* end);
 void tokenizeFilePtr(fileNode *ptr);
-void fileMergesort(fileNode **headPtr);
+void fileMergesort(fileNode** headRef);
 fileNode* merge (fileNode *f1, fileNode *f2);
-void split(fileNode *src, fileNode **leftPtr, fileNode **rightPtr);
+void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
 
 
 //TODO: HUGE FUNCTIONS
@@ -96,7 +97,7 @@ void *direcHandler(void *argStruct){
         if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")){
             //*printf("Looking at path: %s\n", thrdDirent->d_name);
             //3a
-            if(thrdDirent->d_type == DT_DIR){
+            if(thrdDirent->d_type == DT_DIR) {
                 //3aI
                 //*printf("->Path found is directory\n");
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
@@ -111,7 +112,7 @@ void *direcHandler(void *argStruct){
                 ptr1 = ptr1->next;
                 pthread_create(&(ptr1->thread), NULL, direcHandler,newThrdArg);
                 
-            } else if(thrdDirent->d_type == DT_REG){
+            } else if(thrdDirent->d_type == DT_REG) {
                 //*printf("->Path found is a normal file\n");
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
                 newThrdArg->mut = args->mut;
@@ -313,13 +314,16 @@ void tokenizeFilePtr(fileNode *ptr){
  * 3. Compute Kullbeck-Leibler Divergence of each distribution
  * 4. Use KLD to find JSD
  */
-
+/*
 double jensenShannonDist(fileNode *f1, fileNode *f2){
+    //Initialize Pointers
     tokNode *meanHead = NULL;
     tokNode *f1Ptr = f1->tokens;
     tokNode *f2Ptr = f2->tokens;
+    
+    //Iterate through fileNodes to create mean token list
     while(f1Ptr != NULL && f2Ptr != NULL){
-        if(strcmp(f1Ptr->token, f2Ptr->token) == 0){
+        if(strcmp(f1Ptr->token, f2Ptr->token) == 0){ //In the case where f1 and f2 point to tokens of equal value
             if(meanHead == NULL){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
                 meanHead->token = f1Ptr->token;
@@ -333,20 +337,132 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanPtr->next->token = f1Ptr->token;
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
             }
+            f1Ptr = f1Ptr->next;
+            f2Ptr = f2Ptr->next;
         } else if(strcmp(f1Ptr->token, f2Ptr->token) < 0){
+            if(meanHead == NULL){
+                meanHead = (tokNode *)malloc(sizeof(tokNode));
+                meanHead->token = f1Ptr->token;
+                meanHead->discreteProb = (f1Ptr->discreteProb) / 2.0;
+            } else{
+                tokNode *meanPtr = meanHead;
+                while(meanPtr->next != NULL){
+                    meanPtr = meanPtr->next;
+                }
+                meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+                meanPtr->next->token = f1Ptr->token;
+                meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
+            }
             f1Ptr = f1Ptr->next;
         } else {
+            if(meanHead == NULL){
+                meanHead = (tokNode *)malloc(sizeof(tokNode));
+                meanHead->token = f2Ptr->token;
+                meanHead->discreteProb = (f2Ptr->discreteProb) / 2.0;
+            } else{
+                tokNode *meanPtr = meanHead;
+                while(meanPtr->next != NULL){
+                    meanPtr = meanPtr->next;
+                }
+                meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+                meanPtr->next->token = f2Ptr->token;
+                meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
+            }
             f2Ptr = f2Ptr->next;
         }
     }
+    //Clean up step: If one list became null before the other
+    if(f1Ptr!=NULL && f2Ptr == NULL){
+        tokNode *meanPtr = meanHead;
+        while(meanPtr->next != NULL)
+            meanPtr = meanPtr->next;
+        meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+        meanPtr->next->token = f1Ptr->token;
+        meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
+    } else if(f1Ptr == NULL && f2Ptr != NULL){
+        tokNode *meanPtr = meanHead;
+        while(meanPtr->next != NULL)
+            meanPtr = meanPtr->next;
+        meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+        meanPtr->next->token = f2Ptr->token;
+        meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
+    }
     
+    //Calculate the Kullbeck-Leibler Divergence of both files
+    int KLDF1 = 0;
+    f1Ptr = f1;
+    tokNode* meanPtr = meanHead;    
+    while(f1Ptr!=NULL){
+        if(strcmp(f1Ptr->token, meanPtr->token) > 0){
+            f1Ptr = f1Ptr->next;
+        } else {
+            KLDF1 += f1Ptr->discreteProb * (log(f1Ptr->discreteProb / meanPtr->discreteProb));
+        }
+    }
+    int KLDF2 = 0;
+    f2Ptr = f2;
+    tokNode* meanPtr = meanHead;    
+    while(f2Ptr!=NULL){
+        if(strcmp(f2Ptr->token, meanPtr->token) > 0){
+            f2Ptr = f2Ptr->next;
+        } else {
+            KLDF2 += f2Ptr->discreteProb * (log(f2Ptr->discreteProb / meanPtr->discreteProb));
+        }
+    }
+
+    return (KLDF1 + KLDF2)/2;  
 }
+*/
 
 /* Function: fileMergeSort
  * Purpose: Executes Merge Sort on the file data structure to sort the files by token Count
  */
+void fileMergeSort(fileNode** headRef) {
+    fileNode* headPtr = *headRef;
+    fileNode* ptr1;
+    fileNode* ptr2;
+    if(headPtr == NULL || headPtr->next == NULL) {
+        return;
+    }
+    split(headPtr, &ptr1, &ptr2);
+    fileMergeSort(&ptr1); fileMergeSort(&ptr2);
+    *headRef = merge(ptr1, ptr2);
+}
 
+void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr) {
+    fileNode* fast;
+    fileNode* slow;
+    slow = src;
+    fast = src->next;
+    while(fast != NULL) { 
+		fast = fast->next; 
+		if(fast != NULL) { 
+			slow = slow->next; 
+			fast = fast->next; 
+		} 
+	}
+    *leftPtr = src; 
+	*rightPtr = slow->next; 
+	slow->next = NULL; 
+    return;
+}
 
+fileNode* merge(fileNode* f1, fileNode* f2) {
+    fileNode* result = NULL; 
+	if (f1 == NULL) 
+		return (f2); 
+	else if (f2 == NULL) 
+		return (f1); 
+	if (f1->tokCount <= f2->tokCount) { 
+		result = f1; 
+		result->next = merge(f1->next, f2); 
+	} 
+	else { 
+		result = f2; 
+		result->next = merge(f1, f2->next); 
+	} 
+	return result; 
+}
 
 /* Function: concatPath
  * Purpose: takes a filepath and a filename and concatenates them properly
@@ -474,43 +590,14 @@ int main(int argc, char** argv){
         printf("Warning: Only one regular file was detected!\n");
         return 1;
     }
-
-
+    fileMergeSort(&headPtr); //its that easy
 
     //8.
     free(mutx);
     freeDatastructure(headPtr);
 
     
-    /*
-    printf("\n*******TESTING KEKEKEKEKEKEKEKEK*********\n");
-    char* testStr = "TestingFunction/";
-    int i;
-    for(i = 0; i < strlen(testStr); i++){
-        printf("%c\n", testStr[i]);
-    }
-    printf("%c is the slash\n", testStr[strlen(testStr)-1]);
     
-    printf("ERROR CHECK\n");
-    char* test1 = "testing/";
-    char* test2 = "123";
-    char *test = concatPath(test1, test2);
-    printf("concatPath produces: %s\n", test);
-    test1 = "zzb";
-    test2 = "zza";
-
-    printf("str1: %s, str2: %s, strcmp: %d, \n", test1, test2, strcmp(test1,test2));
-
-    char testArr[100];
-    for(i = 0; i < 10; i++){
-        testArr[i] = 'a' + i;
-    }
-    testArr[i] = '\0';
-    testArr[i+1] = 'a';
-    printf("str1 is: %s and is len: %d\n", testArr, strlen(testArr));
-
-    free(test);
-    */
 
     return 0;
     
