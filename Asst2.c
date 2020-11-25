@@ -190,7 +190,15 @@ void *fileHandler(void *argStruct){
     //1
     
     thrdArg *args = (thrdArg *)argStruct;
-    printf("\tExecuting fileHandler on file: %s\n", args->thrdFilePath);
+    printf("fileHandler: thrdFilePath is %s\tlen of that is %d\n", args->thrdFilePath, (int)strlen(args->thrdFilePath));
+    char* temp;
+    if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
+        temp = malloc(strlen(args->thrdFilePath));
+        strncpy(temp, args->thrdFilePath, strlen(args->thrdFilePath) - 1);
+        
+        
+    }
+    printf("\tExecuting fileHandler on file: %s\n", temp);
     if(!goodFile(args->thrdFilePath))
         return (void *)1;
     //2
@@ -216,7 +224,7 @@ void *fileHandler(void *argStruct){
     //6
     //*printf("\tFreeing thread args%s\n", ptr->path);
     freeThrdArg(args);
-
+    free(temp);
     //printf("\tFINISH FILEHANDLER %s\n", ptr->path);
     return (void *)0;
 }
