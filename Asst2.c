@@ -122,6 +122,7 @@ void *direcHandler(void *argStruct){
                     }
                     pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
                 }
+                //freeThrdArg(newThrdArg);
             }
         }
     
@@ -131,12 +132,12 @@ void *direcHandler(void *argStruct){
         for(i = 0; i < thrdIndex+1; i++){
             pthread_join(threadArr[i],NULL);
         }
-        free(threadArr);
+        //free(threadArr);
     }
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
-    freeThrdArg(args);
+    //freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
     return (void *)0;
 }
