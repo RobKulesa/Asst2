@@ -50,15 +50,10 @@ int goodDirectory(char* path);
 int goodFile(char* path);
 char *concatPath(char* beg, char* end);
 void tokenizeFilePtr(fileNode *ptr);
-void fileMergesort(fileNode** headRef);
+void fileMergeSort(fileNode** headRef);
 fileNode* merge (fileNode *f1, fileNode *f2);
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
 void fixFileName(char* badFilePath);
-
-
-
-
-
 
 void *direcHandler(void *argStruct){
     //1
@@ -74,13 +69,10 @@ void *direcHandler(void *argStruct){
         threadArr = NULL;
         thrdIndex = -1;
     }
-        
-
-
     DIR* thrdDirec = opendir(args->thrdFilePath);
     struct dirent *thrdDirent;
     while((thrdDirent = readdir(thrdDirec)), thrdDirent!=NULL){
-        if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")){
+        if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")) {
             if(debugDH) printf("direcHandler | %s:\td_name is %s\n", args->thrdFilePath,(thrdDirent->d_name));
             //3a
             if(thrdDirent->d_type == DT_DIR) {
@@ -132,21 +124,18 @@ void *direcHandler(void *argStruct){
         }
     
     }
-
     int i;
     if(usingThreads){
         for(i = 0; i < thrdIndex+1; i++){
             pthread_join(threadArr[i],NULL);
         }
-        //free(threadArr);
+        free(threadArr);
     }
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
     //freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
-
-    
     return (void *)0;
 }
 
@@ -293,7 +282,7 @@ void tokenizeFilePtr(fileNode *ptr){
         }
         
         if(debugTok) printf("\t\ttokenizeFilePtr | %s: Preparing for Inserting Token [%s]\n", ptr->path, currentTok);
-        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Inserting Token [%s]\n", ptr->path);
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Inserting Token\n", ptr->path);
         if(tokPtrCurr == NULL && tokPtrPrev == NULL){
             if(debugTok) printf("\t\ttokenizeFilePtr | %s: Token List for given FilePtr is unitialized\n", ptr->path);
             ptr->tokens = (tokNode *)malloc(sizeof(tokNode));
@@ -348,13 +337,55 @@ void tokenizeFilePtr(fileNode *ptr){
     if(debugTok) printf("\t\tFINISHTOKENIZER: %s\n", ptr->path);
     return;
 }
+/* Function: fileMergeSort
+ * Purpose: Executes Merge Sort on the file data structure to sort the files by token Count
+ */
+void fileMergeSort(fileNode** headRef) {
+    fileNode* headPtr = *headRef;
+    fileNode* ptr1;
+    fileNode* ptr2;
+    if(headPtr == NULL || headPtr->next == NULL) {
+        return;
+    }
+    split(headPtr, &ptr1, &ptr2);
+    fileMergeSort(&ptr1); fileMergeSort(&ptr2);
+    *headRef = merge(ptr1, ptr2);
+}
 
+void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr) {
+    fileNode* fast;
+    fileNode* slow;
+    slow = src;
+    fast = src->next;
+    while(fast != NULL) { 
+		fast = fast->next; 
+		if(fast != NULL) { 
+			slow = slow->next; 
+			fast = fast->next; 
+		} 
+	}
+    *leftPtr = src; 
+	*rightPtr = slow->next; 
+	slow->next = NULL; 
+    return;
+}
 
-
-
-
-
-
+fileNode* merge(fileNode* f1, fileNode* f2) {
+    fileNode* result = NULL; 
+	if (f1 == NULL) 
+		return (f2); 
+	else if (f2 == NULL) 
+		return (f1); 
+	if (f1->tokCount <= f2->tokCount) { 
+		result = f1; 
+		result->next = merge(f1->next, f2); 
+	} 
+	else { 
+		result = f2; 
+		result->next = merge(f1, f2->next); 
+	} 
+	return result; 
+}
 /* Function: concatPath
  * Purpose: takes a filepath and a filename and concatenates them properly
  */
@@ -531,9 +562,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             f2Ptr = f2Ptr->next;
         }
     }
-
-
-    //Clean up step: If one list became null before the other
+    
     if(f1Ptr!=NULL && f2Ptr == NULL){
         
         tokNode *meanPtr = meanHead;
@@ -559,10 +588,6 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         f2Ptr = f2Ptr->next;
         }
     }
-
-
-
-    
     tokNode* t1 = meanHead;
     printf("Mean Token List:\t");
     while(t1){
@@ -633,92 +658,67 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
  *      2. The shared datastructure
  *      3. The mutex
  */
-int main(int argc, char** argv){    
+int main(int argc, char** argv) {
+    if(!goodDirectory(argv[1])) {
+        printf("Argument contains invalid directory. Error.\n");
+        return 0;
+    }
+    printf("Starting step 2\n");
+    //2. 
+    pthread_mutex_t *mutx = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(mutx, NULL);
     
+    printf("Starting step 3\n");
+    //3. NOTE: headPTR does not correspond with any file.
+    fileNode **headPtr = (fileNode**)malloc(sizeof(fileNode*));
+    *headPtr = NULL;
     
+
+    printf("Starting step 4\n");
+    //4.
+    thrdArg* args = (thrdArg *)malloc(sizeof(thrdArg));
+    args->fileLLHead = headPtr;
+    args->mut = mutx;
+    args->thrdFilePath = (char *)malloc(strlen(argv[1]) + 1);
+    strcpy(args->thrdFilePath , argv[1]);
     
-    int i;
-    /*
-    printf("-----------------------UNIT TESTING TOKENIZER--------------------\n");
+
+    printf("Starting step 5\n");
+    //5. 
+    direcHandler((void *)args);
+    if((*headPtr)->next == NULL) {
+        printf("Error: Nothing detected\n");
+        return 1;
+    }
+    fileNode *temp2 = *headPtr;
+    *headPtr = (*headPtr)->next;
+    free(temp2);
+
+    printf("Starting step 6\n");
+    //6.
+    if((*headPtr)->next == NULL){
+        printf("Warning: Only one regular file was detected!\n");
+        return 1;
+    }
+    fileMergeSort(headPtr); 
+    printDataStruct(headPtr);
+
+
+    printf("Starting step 7\n");
+    //7.
+    fileNode* dsPtr;
+    fileNode* dsPtr2;
     
-        fileNode *f1 = (fileNode*)malloc(sizeof(fileNode));
-        f1->tokCount = 0;
-        f1->next = NULL;
-        f1->tokens = NULL;
-        f1->path = "/Users/akan/Desktop/Asst2Deubg/testtxt.txt";
-        tokenizeFilePtr(f1);
-
-        tokNode* t1 = f1->tokens;
-        
-        
-        printf("\n");
-        fileNode* f2 = (fileNode*)malloc(sizeof(fileNode));
-        f2->tokCount = 0;
-        f2->next = NULL;
-        f2->tokens = NULL;
-        f2->path = "/Users/akan/Desktop/Asst2Deubg/testtxt2.txt";
-        f1->next = f2;
-        tokenizeFilePtr(f2);
-
-        tokNode* t2 = f2->tokens;
-
-        
-
-        printf("tokCount: |%d|\t\t", f1->tokCount);
-        while(t1){
-            printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
-            if(t1->next){
-                printf("->");
-            }
-            t2 = t1;
-            t1=t1->next;
-            //free(t2);
+    for(dsPtr = (*headPtr); dsPtr->next != NULL; dsPtr = dsPtr->next) {
+        for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
+            printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
+            double jsd = jensenShannonDist(dsPtr, dsPtr2);
+            printf("%f %s %s\n", jsd ,dsPtr->path, dsPtr2->path);
         }
-        printf("\n");
-        t2 = f2->tokens;
-        printf("tokCount: |%d|\t\t", f2->tokCount);
-        while(t2){
-            printf("[  %s | %d | %f  ]", t2->token, t2->freq, t2->discreteProb);
-            if(t2->next){
-                printf("->");
-            }
-            t1 = t2;
-            //free(t1);
-            t2=t2->next;
-        }
-        printf("\n");
-        
-        double kekw = jensenShannonDist(f1,f2);
-        printf("JENNSENSHANNONDISTANCE = %f\n", kekw);
-
-        free(f1);
-        free(f2);
-        */
-        printf("---------------Testing direcHandler and fileHandler without using the dataStructure----------------\n");
-        thrdArg* stuff = (thrdArg*)malloc(sizeof(thrdArg));
-        pthread_mutex_t* mutx = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-        
-        pthread_mutexattr_t attr;
-        pthread_mutexattr_init(&attr);
-        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(mutx, NULL);
-        fileNode** headPtr = (fileNode**)malloc(sizeof(fileNode*));
-        stuff->fileLLHead = headPtr;
-        stuff->mut = mutx;
-        *(stuff->fileLLHead) = NULL;
-        char* str = "/Users/akan/Desktop/Asst2Deubg/Test";
-        stuff->thrdFilePath = (char*)malloc(strlen(str)+1);
-        strcpy(stuff->thrdFilePath, str);
-        direcHandler((void*)stuff);
-        //fileHandler((void *)stuff);
-        printDataStruct(headPtr);
-        pthread_mutexattr_destroy(&attr);
-
-
+    } 
+    printf("Started step 8\n");
     //8.
-    //free(mutx);
-    //freeDatastructure(headPtr);
-    
-
+    free(mutx);
+    freeDatastructure(headPtr);
     return 0;
 }
