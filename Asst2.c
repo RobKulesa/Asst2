@@ -44,16 +44,6 @@ typedef struct thrdArg{
     pthread_mutex_t* mut;
 }thrdArg;
 
-typedef enum color{
-    RED,
-    YELLOW,
-    GREEN,
-    CYAN,
-    BLUE,
-    WHITE
-}color;
-
-
 //TODO: Function Signatures
 void *direcHandler(void *argStruct);
 void *fileHandler(void *argStruct);
@@ -67,7 +57,6 @@ void fileMergeSort(fileNode** headRef);
 fileNode* merge (fileNode *f1, fileNode *f2);
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
 void fixFileName(char* badFilePath);
-int compare_double(double x, double y)
 
 void *direcHandler(void *argStruct) {
     //1
@@ -660,15 +649,6 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
 
     return (KLDF1+KLDF2)/2;
 }
-
-
-int compare_double(double x, double y){
-    double epsilon = 0.0000001f;
-    if(fabs(x - y) < epsilon)
-      return 1; //they are same
-      return 0; //they are not same
-}
-
 
 
 /* Function: main
