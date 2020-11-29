@@ -64,6 +64,7 @@ void *direcHandler(void *argStruct) {
     args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
     args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
+    printf("***************OLD (%ld): %s\n", strlen(args->thrdFilePath), args->thrdFilePath);
     if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
         args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
         printf("***************NEW: %s\n", args->thrdFilePath); 
