@@ -13,8 +13,8 @@
 #include <limits.h>
 
 //TODO: Debug globlas
-int debugDH = 1;
-int debugFH = 1;
+int debugDH = 0;
+int debugFH = 0;
 int debugTok = 0;
 int usingThreads = 1;
 int debugJSD = 0;
@@ -44,6 +44,16 @@ typedef struct thrdArg{
     pthread_mutex_t* mut;
 }thrdArg;
 
+typedef enum color{
+    RED,
+    YELLOW,
+    GREEN,
+    CYAN,
+    BLUE,
+    WHITE
+}color;
+
+
 //TODO: Function Signatures
 void *direcHandler(void *argStruct);
 void *fileHandler(void *argStruct);
@@ -57,6 +67,7 @@ void fileMergeSort(fileNode** headRef);
 fileNode* merge (fileNode *f1, fileNode *f2);
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
 void fixFileName(char* badFilePath);
+int compare_double(double x, double y)
 
 void *direcHandler(void *argStruct) {
     //1
@@ -600,41 +611,41 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
 
 
     tokNode* t1 = meanHead;
-    printf("Mean Token List:\t");
+    if(debugJSD) printf("Mean Token List:\t");
     while(t1){
-            printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
+            if(debugJSD) printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
             if(t1->next){
-                printf("->\n");
+               if(debugJSD)  printf("->\n");
             }
             t1=t1->next;
             
     }
-    printf("\n");
+    if(debugJSD) printf("\n");
     double KLDF1 = 0;
     f1Ptr = f1->tokens;
     tokNode* meanPtr = meanHead;    
     while(f1Ptr!=NULL){
-        printf("f1Ptr->token: %s\tmeanPtr->token: %s\n", f1Ptr->token, meanPtr->token);
+        if(debugJSD) printf("f1Ptr->token: %s\tmeanPtr->token: %s\n", f1Ptr->token, meanPtr->token);
         if(strcmp(f1Ptr->token, meanPtr->token) > 0){
             meanPtr = meanPtr->next;
         } else {
-            printf("\t%f * log(%f/%f)  =  %f\n", f1Ptr->discreteProb, f1Ptr->discreteProb, meanPtr->discreteProb, f1Ptr->discreteProb * (log10(f1Ptr->discreteProb / meanPtr->discreteProb)));
+            if(debugJSD) printf("\t%f * log(%f/%f)  =  %f\n", f1Ptr->discreteProb, f1Ptr->discreteProb, meanPtr->discreteProb, f1Ptr->discreteProb * (log10(f1Ptr->discreteProb / meanPtr->discreteProb)));
             KLDF1 += f1Ptr->discreteProb * (log10(f1Ptr->discreteProb / meanPtr->discreteProb));
             meanPtr = meanPtr->next;
             f1Ptr = f1Ptr->next;
         }
     }
-    printf("KLD1: %f\n", KLDF1);
+    if(debugJSD) printf("KLD1: %f\n", KLDF1);
 
     double KLDF2 = 0;
     f2Ptr = f2->tokens;
     meanPtr = meanHead;    
     while(f2Ptr!=NULL && meanPtr != NULL){
-        printf("f2Ptr->token: %s\tmeanPtr->token: %s\n", f2Ptr->token, meanPtr->token);
+        if(debugJSD) printf("f2Ptr->token: %s\tmeanPtr->token: %s\n", f2Ptr->token, meanPtr->token);
         if(strcmp(f2Ptr->token, meanPtr->token) > 0){
             meanPtr = meanPtr->next;
         } else {
-            printf("\t%f * log(%f/%f)  =  %f\n", f2Ptr->discreteProb, f2Ptr->discreteProb, meanPtr->discreteProb, f2Ptr->discreteProb * (log10(f2Ptr->discreteProb / meanPtr->discreteProb)));
+           if(debugJSD) printf("\t%f * log(%f/%f)  =  %f\n", f2Ptr->discreteProb, f2Ptr->discreteProb, meanPtr->discreteProb, f2Ptr->discreteProb * (log10(f2Ptr->discreteProb / meanPtr->discreteProb)));
             KLDF2 += f2Ptr->discreteProb * (log10(f2Ptr->discreteProb / meanPtr->discreteProb));
             meanPtr = meanPtr->next;
             f2Ptr = f2Ptr->next;
@@ -643,12 +654,22 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     }
 
     //printf("Not skipping: here are the calculations:\n");
-    printf("KLD2: %f\n", KLDF2);
+    if(debugJSD) printf("KLD2: %f\n", KLDF2);
 
 
 
     return (KLDF1+KLDF2)/2;
 }
+
+
+int compare_double(double x, double y){
+    double epsilon = 0.0000001f;
+    if(fabs(x - y) < epsilon)
+      return 1; //they are same
+      return 0; //they are not same
+}
+
+
 
 /* Function: main
  * Algorithm
@@ -724,13 +745,27 @@ int main(int argc, char** argv) {
     //7.
     fileNode* dsPtr;
     fileNode* dsPtr2;
-    
+    char* begColor;
     //TODO fix this for loop kek
     for(dsPtr = *headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
         for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
-            printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
+            if(debugJSD) printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
             double jsd = jensenShannonDist(dsPtr, dsPtr2);
-            //printf("%f %s %s\n", jsd ,dsPtr->path, dsPtr2->path);
+            if(jsd > 0.3)
+                begColor = "\033[0m";
+            else if(jsd > 0.25)
+                begColor = "\033[0;34m";
+            else if(jsd > 0.2)
+                begColor = "\033[0;36m";
+            else if(jsd > 0.15)
+                begColor = "\033[0;32m";
+            else if(jsd > 0.1)
+                begColor = "\033[0;33m";
+            else
+                begColor = "\033[0;31m";
+            printf(begColor);
+            printf("%f", jsd);
+            printf("\033[0m \"%s\" and \"%s\"", dsPtr->path, dsPtr2->path);
         }
     } 
     printf("Started step 8\n");
@@ -739,7 +774,6 @@ int main(int argc, char** argv) {
     freeDatastructure(headPtr);
     
 
-    //printf("%s, %d\n", concatPath("Hello/", "yark.txt"), (int)strlen(concatPath("Hello/", "yark.txt")));
     return 0;
 
 
