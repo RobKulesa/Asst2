@@ -10,6 +10,11 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <math.h>
+//TODO: Debug globlas
+int debugDH = 1;
+int debugFH = 1;
+int debugTok = 1;
+int usingThreads = 1;
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -32,8 +37,8 @@ typedef struct thrdNode{
 
 typedef struct thrdArg{
     char* thrdFilePath;
-    fileNode *fileLLHead;
-    pthread_mutex_t *mut;
+    fileNode** fileLLHead;
+    pthread_mutex_t* mut;
 }thrdArg;
 
 //TODO: Function Signatures
@@ -48,128 +53,100 @@ void tokenizeFilePtr(fileNode *ptr);
 void fileMergesort(fileNode** headRef);
 fileNode* merge (fileNode *f1, fileNode *f2);
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
+void fixFileName(char* badFilePath);
 
 
-//TODO: HUGE FUNCTIONS
-/* Function: direcHandler
- * Instructions
- * 1. Check the directory to see if it is accessible
- *      IF not, output error and "return gracefully". IF so, proceed
- * 2. Open the directory with opendir() and iterate through it with readdir
- * 3. IF entry is a directory
- *      -> create new pthread and run another copy of direcHandler on the directory
- * 4. IF entry is a file
- *      -> create a new pthread and run another copy of file handler
- * 5. IF entry is not directory or normal file
- *      -> ignore it
- * 6. Join all threads.
- * 
- * ALGORITHM
- * 1. Check directory validity. If invalid, stop and error; IF valid proceed.
- * 2. Initialize thrdLL headPtr
- * 3. Iterate through the dirent structure
- *      a. If Directory
- *          I. grab the name of the directory
- *          II. malloc a new string that is the concatenation of the name and the current path
- *          III. pass that concatenation, mutex, and fileLL headptr as a struct arg to a new thread
- *          IV. Hold that thread in a new thrdNode by iterating to the end of the LL
- *      b. If File (same as above, but with file)
- *      c. If garbage -> do nothing
- * 4. Free threadLL
- * 5. Free the threadArg that was passed to the function
- */
+
+
+
+
 void *direcHandler(void *argStruct){
     //1
     thrdArg *args = (thrdArg *)argStruct;
-    printf("direcHandler: Starting direcHandler on %s\n", args->thrdFilePath);
+    if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
         //printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
     }
-    //2
-    int thrdCount = 0;
-    pthread_t* threadArr = NULL;
-    pthread_t* tempPtr;
-    //thrdNode *thrdHead = (thrdNode *)malloc(sizeof(thrdNode));
-    //thrdHead->next = NULL;
-    //3
-    //thrdNode *ptr1;
-    //thrdNode *ptr2;
+    pthread_t* threadArr;
+    int thrdIndex;
+    if(usingThreads){
+        threadArr = NULL;
+        thrdIndex = -1;
+    }
+        
+
+
     DIR* thrdDirec = opendir(args->thrdFilePath);
     struct dirent *thrdDirent;
     while((thrdDirent = readdir(thrdDirec)), thrdDirent!=NULL){
         if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")){
-            printf("direcHandler: Looking at path: %s\n", thrdDirent->d_name);
-            printf("direcHandler: thrdCount is %d in thread for %s\n", thrdCount, args->thrdFilePath);
-
+            if(debugDH) printf("direcHandler | %s:\td_name is %s\n", args->thrdFilePath,(thrdDirent->d_name));
             //3a
             if(thrdDirent->d_type == DT_DIR) {
                 //3aI
-                printf("direcHandler: ->Path found is directory\n");
+                if(debugDH) printf("direcHandler | %s:\t->Path found is directory\n",args->thrdFilePath);
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
                 newThrdArg->mut = args->mut;
                 newThrdArg->fileLLHead = args->fileLLHead;
                 newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
-                printf("direcHandler: result of concatenation of strings %s and %s:\n\t%s\n", args->thrdFilePath, thrdDirent->d_name, newThrdArg->thrdFilePath);
-                /*
-                ptr1 = thrdHead;
-                while(ptr1->next!=NULL)
-                    ptr1 = ptr1->next;
-                ptr1->next = (thrdNode *)malloc(sizeof(thrdNode));
-                ptr1 = ptr1->next;
-                */
-                threadArr = (pthread_t*)realloc(threadArr, (thrdCount+1)*sizeof(pthread_t));
-
-                pthread_create(threadArr+thrdCount, NULL, direcHandler,newThrdArg);
-                thrdCount++;
+                if(!usingThreads) direcHandler(newThrdArg);
+                else{
+                    if(threadArr == NULL){
+                        threadArr = (pthread_t*)malloc(sizeof(pthread_t));
+                        thrdIndex++;
+                    } else{
+                        pthread_t* temp = threadArr;
+                        threadArr = (pthread_t*)malloc(sizeof(pthread_t)*(thrdIndex+2));
+                        memcpy(threadArr, temp, (size_t)(sizeof(pthread_t)*(thrdIndex+1)));
+                        free(temp);
+                        thrdIndex++;
+                    }
+                    pthread_create(threadArr+thrdIndex, NULL, direcHandler,newThrdArg);
+                }
+                
             } else if(thrdDirent->d_type == DT_REG) {
-                printf("direcHandler: ->Path found is a normal file\n");
-                thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
+                
+                if(debugDH) printf("direcHandler | %s:\t->Path found is a normal file\n",args->thrdFilePath);
+                thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));                
                 newThrdArg->mut = args->mut;
                 newThrdArg->fileLLHead = args->fileLLHead;
                 newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
-                printf("direcHandler: result of concatenation of strings %s and %s:\n\t%s\n", args->thrdFilePath, thrdDirent->d_name, newThrdArg->thrdFilePath);
-                /*
-                ptr1 = thrdHead;
-                while(ptr1->next!=NULL)
-                    ptr1 = ptr1->next;
-                ptr1->next = (thrdNode *)malloc(sizeof(thrdNode));
-                ptr1 = ptr1->next;
-                */
-                threadArr = (pthread_t*)realloc(threadArr, (thrdCount+1)*sizeof(pthread_t));
-                //tempPtr = (pthread_t*)malloc((thrdCount+1)*sizeof(pthread_t));
-                //memcpy(threadArr, tempPtr, thrdCount*sizeof(pthread_t));
-                pthread_create(threadArr+thrdCount, NULL, fileHandler, (void*) newThrdArg);
-                thrdCount++;
+                if(!usingThreads) fileHandler(newThrdArg);
+                else{
+                    if(threadArr == NULL){
+                        threadArr = (pthread_t*)malloc(sizeof(pthread_t));
+                        thrdIndex++;
+                    } else{
+                        pthread_t* temp = threadArr;
+                        threadArr = (pthread_t*)malloc(sizeof(pthread_t)*(thrdIndex+2));
+                                        if(debugDH) printf("direcHandler | %s:\t->Path found is a normal file\n",args->thrdFilePath);
+
+                        memcpy(threadArr, temp, (size_t)(sizeof(pthread_t)*(thrdIndex+1)));
+                        free(temp);
+                        thrdIndex++;
+                    }
+                    pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
+                }
             }
         }
     
     }
 
-    //4
     int i;
-    printf("direcHandler: Joining threads now\n");
-    for(i = 0; i < thrdCount; i++){
-        pthread_join(threadArr[i], NULL);
+    if(usingThreads){
+        for(i = 0; i < thrdIndex+1; i++){
+            pthread_join(threadArr[i],NULL);
+        }
+        //free(threadArr);
     }
-    
-    //ptr1 = thrdHead->next;
-    //free(thrdHead);
-    /*
-    while(ptr1 != NULL){
-        printf("direcHandler: joining thread %d\n", i+1);
-        ptr2 = ptr1;
-        if(ptr2->thread != NULL)
-            pthread_join((ptr2->thread), NULL);
-        ptr1 = ptr1->next;
-        if(ptr2 != NULL) free(ptr2);
-        i++;
-    }
-    */
+    closedir(thrdDirec);
     //5
-    //*printf("DirecHandler FINISH %s\n", args->thrdFilePath);   
-    free(args);
-    free(threadArr);
+    if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
+    //freeThrdArg(args);
+    if(debugDH) printf("direcHandler |:\tFINISH2\n");
+
+    
     return (void *)0;
 }
 
@@ -190,63 +167,88 @@ void *fileHandler(void *argStruct){
     //1
     
     thrdArg *args = (thrdArg *)argStruct;
-    printf("\tExecuting fileHandler on file: %s\n", args->thrdFilePath);
+    pthread_mutex_lock(args->mut);
+    
+    
+    if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
     if(!goodFile(args->thrdFilePath))
         return (void *)1;
-    //2
-    pthread_mutex_lock(args->mut);
+    fileNode* ptr;
+    fileNode** headPtrPtr = args->fileLLHead;
+    if (debugFH) printf("\tfileHandler | %s:\tTestline 1\n", args->thrdFilePath);
+    if(*(headPtrPtr) == NULL){
+        *(headPtrPtr) = (fileNode*)malloc(sizeof(fileNode));
+        ptr = *headPtrPtr;
+        if (debugFH) printf("\tfileHandler | %s:\tTestline 2\n", args->thrdFilePath);
+    } else{
+        ptr = *headPtrPtr;
+        if (debugFH) printf("\tfileHandler | %s:\tTestline 3\n", args->thrdFilePath);
+        while(ptr->next != NULL){
+            if (debugFH) printf("\tfileHandler | %s:\tTestline 4\n", args->thrdFilePath);
+            ptr = ptr->next;
+        }
 
-    //3
-    fileNode *ptr = args->fileLLHead;
-    while(ptr->next != NULL)
+        ptr->next = (fileNode*)malloc(sizeof(fileNode));
+        if (debugFH) printf("\tfileHandler | %s:\tTestline 7\n", args->thrdFilePath);
         ptr = ptr->next;
-    ptr->next = (fileNode *)malloc(sizeof(fileNode));
-    ptr = ptr->next;
+    }
     ptr->next = NULL;
     ptr->tokCount = 0;
-    ptr->path = (char *)malloc(strlen(args->thrdFilePath)+1); //+1 to add space for null terminator
+    ptr->tokens = NULL;
+    ptr->path = (char*)malloc(strlen(args->thrdFilePath)+1);
     strcpy(ptr->path, args->thrdFilePath);
 
-    //4
-    pthread_mutex_unlock(args->mut);
+    
 
     //5
+    if (debugFH) printf("\tfileHandler | %s:\tCalling Tokenizer\n", args->thrdFilePath);
     tokenizeFilePtr(ptr);
-
+    
     //6
-    //*printf("\tFreeing thread args%s\n", ptr->path);
-    freeThrdArg(args);
+    
 
-    //printf("\tFINISH FILEHANDLER %s\n", ptr->path);
+    if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
+    pthread_mutex_unlock(args->mut);
+    
+    //freeThrdArg(args);
+
+    
+    
     return (void *)0;
 }
 
-/* Function: Tokenize File
- * 1. Look at file
- * 2. Add tokens using insertion sort
- * 3. Keep total token count as we proceed
- * 4. Then compute the discrete probability of each token
- */
+
+
+
 void tokenizeFilePtr(fileNode *ptr){
-    //printf("\t\tExecuting tokenizer on %s\n", ptr->path);
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: INITIATE\n", ptr->path);
     //Pull data out of the file
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Open\n", ptr->path);
     int fd = open(ptr->path, O_RDWR);
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: lseek\n", ptr->path);
     int fileSize = (int)lseek(fd, (size_t)0, SEEK_END);
     lseek(fd, (off_t)0, SEEK_SET);
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Allocating Buffer\n", ptr->path);
     char *buffer = (char *)malloc(fileSize);
     //buffer[fileSize] = '\0';
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Reading info into buffer\n", ptr->path);
     read(fd, (void *)buffer, (size_t)fileSize);
-    char currentTok[fileSize];
+    char* currentTok = (char*)malloc(fileSize); 
     int tokCount = 0;
 
     //Iterate through buffer
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Starting Tokenization Process\n", ptr->path);
     tokNode *tokPtrCurr = ptr->tokens;
     tokNode *tokPtrPrev;
     int i;
     int tokIndex;
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Starting for loop\n", ptr->path);
     for(i = 0; i < fileSize; i++){
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Start FORLOOP Iteration [%d]\n", ptr->path, i);
         tokPtrCurr = ptr->tokens;
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Start FORLOOP Iteration [%d]1\n", ptr->path, i);
         tokPtrPrev = NULL;
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Start FORLOOP Iteration [%d]2\n", ptr->path, i);
         //printf("\t\ttokPtrCurr is at position %p\n", tokPtrCurr);
         //Skip white space in the beginning
         tokIndex = 0;
@@ -260,52 +262,53 @@ void tokenizeFilePtr(fileNode *ptr){
             }
             i++;
         }
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Start FORLOOP Iteration [%d]3\n", ptr->path, i);
         //End the token with a null terminator
         currentTok[tokIndex] = '\0';
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Start FORLOOP Iteration [%d]4\n", ptr->path, i);
         //printf("\t\tDETECTION:: %s\n", currentTok);
 
         while(tokPtrCurr!=NULL){
+
+            if(ptr->path == NULL) printf("Null thing found1\n");
+            if(currentTok == NULL) printf("Null thing found2\n");
+            if(tokPtrCurr->token == NULL) printf("Null thing found2\n");
+            
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Comparing [%s] and [%s]\n", ptr->path, currentTok, tokPtrCurr->token);
             //printf("\t\t\tComparing to: %s\n", tokPtrCurr->token);
+            if(debugTok) printf("\t\ttokenizeFilePtr | len of currentTok is: %lu\n", strlen(currentTok));
             if(strcmp(currentTok, tokPtrCurr->token) <= 0){
-                //printf("\t\t\tstrcmp: %d\n", strcmp(currentTok, tokPtrCurr->token));
+                if(debugTok) printf("\t\ttokenizeFilePtr | error here?5\n");
                 break;
             }
                 
             else{
-                //printf("\t\t\tstrcmp: %d.\n", strcmp(currentTok, tokPtrCurr->token));
+                if(debugTok) printf("\t\ttokenizeFilePtr | error here?\n");
                 tokPtrPrev = tokPtrCurr;
+                if(debugTok) printf("\t\ttokenizeFilePtr | error here2?\n");
                 tokPtrCurr = tokPtrCurr->next;
+                if(debugTok) printf("\t\ttokenizeFilePtr | error here?3\n");
             }
-                
+            if(debugTok) printf("\t\ttokenizeFilePtr | error here?4\n");
         }
         
-        /*
-        if(tokPtrPrev == NULL && tokPtrCurr == NULL){
-            printf("\t\tBoth pointers are NULL\n");
-        } else if(tokPtrPrev == NULL && tokPtrCurr != NULL){
-            printf("\t\tPrev is null, but curr is not\n");
-        } else if(tokPtrPrev!= NULL && tokPtrCurr == NULL){
-            printf("\t\tPrev isn't null, but curr is\n");
-        } else{
-            printf("\t\tneither are null\n");
-        }
-        */
-
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Preparing for Inserting Token [%s]\n", ptr->path, currentTok);
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Inserting Token [%s]\n", ptr->path);
         if(tokPtrCurr == NULL && tokPtrPrev == NULL){
-            //printf("\t\tCASE1: token list unitialized.\n");
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Token List for given FilePtr is unitialized\n", ptr->path);
             ptr->tokens = (tokNode *)malloc(sizeof(tokNode));
             ptr->tokens->token = (char *)malloc(strlen(currentTok)+1);
             strcpy(ptr->tokens->token, currentTok);
             ptr->tokens->freq = 1;
             //printf("\t\t\tINSERTION: %s\n", ptr->tokens->token);
         }  else if(tokPtrPrev!= NULL && tokPtrCurr == NULL){//We have reached the end of a nonempty list
-            //printf("\t\tWe have reached the end of a nonempty list\n");
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: End of List reached\n", ptr->path);
             tokPtrPrev->next = (tokNode *)malloc(sizeof(tokNode));
             tokPtrPrev->next->token = (char *)malloc(strlen(currentTok)+1);
             strcpy(tokPtrPrev->next ->token, currentTok);
             tokPtrPrev->next->freq = 1;
         } else if(tokPtrPrev == NULL && tokPtrCurr != NULL && strcmp(currentTok, tokPtrCurr->token) != 0 ){
-            //printf("\t\tNeed to insert new node at beginning of list\n");
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Insert in beginning of list\n", ptr->path);
             tokNode *temp = ptr->tokens;
             ptr->tokens = (tokNode *)malloc(sizeof(tokNode));
             ptr->tokens->token = (char *)malloc(strlen(currentTok)+1);
@@ -313,34 +316,164 @@ void tokenizeFilePtr(fileNode *ptr){
             strcpy(ptr->tokens->token, currentTok);
             ptr->tokens->next = temp;
         } else if(tokPtrCurr!=NULL && strcmp(currentTok, tokPtrCurr->token) == 0){
-            //printf("\t\tCASE: equal token found\n");
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Equal Token Found\n", ptr->path);
             tokPtrCurr->freq += 1;
         }else if(tokPtrCurr != NULL && tokPtrPrev!=NULL){
-            //printf("\t\tNeed to insert new node at middle of list\n");
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Inserting somewhere in the middle of the list\n", ptr->path);
             tokPtrPrev->next = (tokNode *)malloc(sizeof(tokNode));
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test1\n", ptr->path);
             tokPtrPrev->next->token = (char *)malloc(strlen(currentTok)+1);
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test2\n", ptr->path);
             strcpy(tokPtrPrev->next ->token, currentTok);
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test3\n", ptr->path);
             tokPtrPrev->next->next = tokPtrCurr;
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test4\n", ptr->path);
             tokPtrPrev->next->freq = 1;
+            if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test5\n", ptr->path);
         }
         tokCount++;
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test6\n", ptr->path);
     }
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: Calculating Discrete Probabilities\n", ptr->path);
     tokNode *tokPtrTemp;
     ptr->tokCount =tokCount;
     for(tokPtrTemp = ptr->tokens; tokPtrTemp!=NULL; tokPtrTemp = tokPtrTemp->next){
-        tokPtrTemp->discreteProb = (double)tokPtrTemp->freq / (double)tokCount;
+        if(debugTok) printf("\t\ttokenizeFilePtr | %s: Calculating Discrete Probability for %s\n", ptr->path, tokPtrTemp->token);
+            if(tokPtrTemp)
+            tokPtrTemp->discreteProb = (double)tokPtrTemp->freq / (double)tokCount;
     }
-    printf("\t\tFINISHTOKENIZER: %s\n", ptr->path);
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: freeing currentTok\n", ptr->path);
+    free(currentTok);
+    if(debugTok) printf("\t\ttokenizeFilePtr | %s: free currentTok\n", ptr->path);
+    if(debugTok) printf("\t\tFINISHTOKENIZER: %s\n", ptr->path);
     return;
 }
 
 
-/* Function: jensenShannonDist
- * 1. Create Mean token list
- * 2. Compute mean probabilities of any tokens that are the same using formula
- * 3. Compute Kullbeck-Leibler Divergence of each distribution
- * 4. Use KLD to find JSD
+
+
+
+
+
+/* Function: concatPath
+ * Purpose: takes a filepath and a filename and concatenates them properly
  */
+char *concatPath(char* beg, char* end) {
+    int noSlash = beg[strlen(beg)-1] != '/';
+    int newLen = strlen(beg)+strlen(end);
+    if(noSlash)
+        newLen++;
+    char* newPath = (char *)malloc(newLen);
+    strcat(newPath, beg);
+    if(noSlash)
+        strcat(newPath, "/");
+    strcat(newPath, end);
+    newPath[newLen] = '\0';
+    return newPath;
+}
+
+
+void fixFileName(char* badFileName){
+    if(strlen(badFileName) <= 0)
+        return;
+    int i;
+    for(i = 0; i < strlen(badFileName)-4; i++){
+        if(badFileName[i]== '.' && badFileName[i+1]=='t' && badFileName[i+2]=='x' && badFileName[i+3] == 't'){
+            badFileName[i+4] = '\0';
+        }
+    }
+    return;
+}
+
+void printDataStruct(fileNode** headPtr){
+    fileNode *ptr = *headPtr;
+    fileNode *fTemp;
+    tokNode *ptr2;
+    tokNode *tokTemp;
+    
+    while(ptr!=NULL){
+        double combinedProb = 0.0;
+        if(ptr->path != NULL){
+            printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
+        }
+        ptr2 = ptr->tokens;
+        while(ptr2!=NULL){
+            printf("\tToken: %s\tFrequency: %d\tProbability: %f\n", ptr2->token, ptr2->freq, ptr2->discreteProb);
+            combinedProb+=ptr2->discreteProb;
+            //free(ptr2->token);
+            tokTemp = ptr2;
+            ptr2 = ptr2->next;
+            //free(tokTemp);
+        }
+        printf("\tCOMBINED PROB: %f\n", combinedProb);
+        //free(ptr->path);
+        fTemp = ptr;
+        ptr = ptr->next;
+        //free(fTemp);
+    }
+}
+
+//TODO: Freeing Functions
+void freeThrdArg(thrdArg* argStruct){
+    free(argStruct->thrdFilePath);
+    free(argStruct);
+}
+
+void freeDatastructure(fileNode** headPtr){
+    fileNode *ptr = *headPtr;
+    fileNode *fTemp;
+    tokNode *ptr2;
+    tokNode *tokTemp;
+    
+    while(ptr!=NULL){
+        double combinedProb = 0.0;
+        if(ptr->path != NULL){
+            printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
+        }
+        ptr2 = ptr->tokens;
+        while(ptr2!=NULL){
+            combinedProb+=ptr2->discreteProb;
+            free(ptr2->token);
+            tokTemp = ptr2;
+            ptr2 = ptr2->next;
+            free(tokTemp);
+        }
+        //printf("\tCOMBINED PROB: %f\n", combinedProb);
+        if(ptr->path!=NULL)
+            free(ptr->path);
+        fTemp = ptr;
+        ptr = ptr->next;
+        free(fTemp);
+    }
+    
+    free(headPtr);
+    return;
+}
+
+//? VALIDITY CHECK FUNCTIONS
+/*
+ * Function: goodDirectory
+ * Returns 1 if the argument is a valid directory name and 0 otherwise
+ */
+int goodDirectory(char* path){
+    //printf("\t**Path is: %s\n", path);
+    DIR* pathDir = opendir(path);
+    //printf("->*Opened the directory\n");
+    int ret = 0;
+    if(pathDir != NULL)
+        ret = 1;
+    //printf("\t**Closing the directory..\n");
+    closedir(pathDir);
+    return ret;
+}
+
+/*
+ * Function: goodFile
+ * Returns 1 if the argument is a valid file and 0 otherwise
+ */
+int goodFile(char* path){
+    return (open(path, O_RDONLY) > 0);
+}
 
 double jensenShannonDist(fileNode *f1, fileNode *f2){
     //Initialize Pointers
@@ -350,7 +483,6 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     
     //Iterate through fileNodes to create mean token list
     while(f1Ptr != NULL && f2Ptr != NULL) {
-        printf("\t\t*****Fucky wucky token: %s\n", f2Ptr->token);
         if(strcmp(f1Ptr->token, f2Ptr->token) == 0) { //In the case where f1 and f2 point to tokens of equal value
             if(meanHead == NULL){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
@@ -403,204 +535,85 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
 
     //Clean up step: If one list became null before the other
     if(f1Ptr!=NULL && f2Ptr == NULL){
+        
         tokNode *meanPtr = meanHead;
         while(meanPtr->next != NULL)
             meanPtr = meanPtr->next;
-        meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-        meanPtr->next->token = f1Ptr->token;
-        meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
+        while(f1Ptr!=NULL){
+            meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+            meanPtr->next->token = f1Ptr->token;
+            meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
+            meanPtr = meanPtr->next;
+            f1Ptr = f2Ptr->next;
+        }
+        
     } else if(f1Ptr == NULL && f2Ptr != NULL){
         tokNode *meanPtr = meanHead;
         while(meanPtr->next != NULL)
             meanPtr = meanPtr->next;
-        meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+        while(f2Ptr!=NULL){
+            meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
         meanPtr->next->token = f2Ptr->token;
         meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
+        meanPtr = meanPtr->next;
+        f2Ptr = f2Ptr->next;
+        }
     }
+
+
+
     
-    //Calculate the Kullbeck-Leibler Divergence of both files
-    int KLDF1 = 0;
+    tokNode* t1 = meanHead;
+    printf("Mean Token List:\t");
+    while(t1){
+            printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
+            if(t1->next){
+                printf("->\n");
+            }
+            t1=t1->next;
+            
+    }
+    printf("\n");
+    double KLDF1 = 0;
     f1Ptr = f1->tokens;
     tokNode* meanPtr = meanHead;    
     while(f1Ptr!=NULL){
+        printf("f1Ptr->token: %s\tmeanPtr->token: %s\n", f1Ptr->token, meanPtr->token);
         if(strcmp(f1Ptr->token, meanPtr->token) > 0){
-            f1Ptr = f1Ptr->next;
+            meanPtr = meanPtr->next;
         } else {
-            KLDF1 += f1Ptr->discreteProb * (log(f1Ptr->discreteProb / meanPtr->discreteProb));
+            printf("\t%f * log(%f/%f)  =  %f\n", f1Ptr->discreteProb, f1Ptr->discreteProb, meanPtr->discreteProb, f1Ptr->discreteProb * (log10(f1Ptr->discreteProb / meanPtr->discreteProb)));
+            KLDF1 += f1Ptr->discreteProb * (log10(f1Ptr->discreteProb / meanPtr->discreteProb));
             meanPtr = meanPtr->next;
             f1Ptr = f1Ptr->next;
         }
     }
-    int KLDF2 = 0;
+    printf("KLD1: %f\n", KLDF1);
+
+    double KLDF2 = 0;
     f2Ptr = f2->tokens;
     meanPtr = meanHead;    
-    while(f2Ptr!=NULL){
+    while(f2Ptr!=NULL && meanPtr != NULL){
+        printf("f2Ptr->token: %s\tmeanPtr->token: %s\n", f2Ptr->token, meanPtr->token);
         if(strcmp(f2Ptr->token, meanPtr->token) > 0){
-            f2Ptr = f2Ptr->next;
+            meanPtr = meanPtr->next;
         } else {
-            KLDF2 += f2Ptr->discreteProb * (log(f2Ptr->discreteProb / meanPtr->discreteProb));
+            printf("\t%f * log(%f/%f)  =  %f\n", f2Ptr->discreteProb, f2Ptr->discreteProb, meanPtr->discreteProb, f2Ptr->discreteProb * (log10(f2Ptr->discreteProb / meanPtr->discreteProb)));
+            KLDF2 += f2Ptr->discreteProb * (log10(f2Ptr->discreteProb / meanPtr->discreteProb));
             meanPtr = meanPtr->next;
             f2Ptr = f2Ptr->next;
+            
         }
     }
 
+    //printf("Not skipping: here are the calculations:\n");
+    printf("KLD2: %f\n", KLDF2);
 
-    return (KLDF1 + KLDF2)/2;  
+
+
+    return (KLDF1+KLDF2)/2;
 }
 
-/* Function: fileMergeSort
- * Purpose: Executes Merge Sort on the file data structure to sort the files by token Count
- */
-void fileMergeSort(fileNode** headRef) {
-    fileNode* headPtr = *headRef;
-    fileNode* ptr1;
-    fileNode* ptr2;
-    if(headPtr == NULL || headPtr->next == NULL) {
-        return;
-    }
-    split(headPtr, &ptr1, &ptr2);
-    fileMergeSort(&ptr1); fileMergeSort(&ptr2);
-    *headRef = merge(ptr1, ptr2);
-}
-
-void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr) {
-    fileNode* fast;
-    fileNode* slow;
-    slow = src;
-    fast = src->next;
-    while(fast != NULL) { 
-		fast = fast->next; 
-		if(fast != NULL) { 
-			slow = slow->next; 
-			fast = fast->next; 
-		} 
-	}
-    *leftPtr = src; 
-	*rightPtr = slow->next; 
-	slow->next = NULL; 
-    return;
-}
-
-fileNode* merge(fileNode* f1, fileNode* f2) {
-    fileNode* result = NULL; 
-	if (f1 == NULL) 
-		return (f2); 
-	else if (f2 == NULL) 
-		return (f1); 
-	if (f1->tokCount <= f2->tokCount) { 
-		result = f1; 
-		result->next = merge(f1->next, f2); 
-	} 
-	else { 
-		result = f2; 
-		result->next = merge(f1, f2->next); 
-	} 
-	return result; 
-}
-
-/* Function: concatPath
- * Purpose: takes a filepath and a filename and concatenates them properly
- */
-char *concatPath(char* beg, char* end) {
-    int noSlash = beg[strlen(beg)-1] != '/';
-    int newLen = strlen(beg)+strlen(end);
-    if(noSlash)
-        newLen++;
-    char* newPath = (char *)malloc(newLen);
-    strcat(newPath, beg);
-    if(noSlash)
-        strcat(newPath, "/");
-    strcat(newPath, end);
-    return newPath;
-}
-
-
-void printDataStruct(fileNode *headPtr){
-    fileNode *ptr = headPtr;
-    fileNode *fTemp;
-    tokNode *ptr2;
-    tokNode *tokTemp;
-    
-    while(ptr!=NULL){
-        double combinedProb = 0.0;
-        if(ptr->path != NULL){
-            printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
-        }
-        ptr2 = ptr->tokens;
-        while(ptr2!=NULL){
-            printf("\tToken: %s\tFrequency: %d\tProbability: %f\n", ptr2->token, ptr2->freq, ptr2->discreteProb);
-            combinedProb+=ptr2->discreteProb;
-            //free(ptr2->token);
-            tokTemp = ptr2;
-            ptr2 = ptr2->next;
-            //free(tokTemp);
-        }
-        printf("\tCOMBINED PROB: %f\n", combinedProb);
-        //free(ptr->path);
-        fTemp = ptr;
-        ptr = ptr->next;
-        //free(fTemp);
-    }
-}
-
-//TODO: Freeing Functions
-void freeThrdArg(thrdArg* argStruct){
-    free(argStruct->thrdFilePath);
-    free(argStruct);
-}
-
-void freeDatastructure(fileNode *headPtr){
-    fileNode *ptr = headPtr;
-    fileNode *fTemp;
-    tokNode *ptr2;
-    tokNode *tokTemp;
-    
-    while(ptr!=NULL){
-        double combinedProb = 0.0;
-        if(ptr->path != NULL){
-            //printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
-        }
-        ptr2 = ptr->tokens;
-        while(ptr2!=NULL){
-            //printf("\tToken: %s\tFrequency: %d\tProbability: %f\n", ptr2->token, ptr2->freq, ptr2->discreteProb);
-            combinedProb+=ptr2->discreteProb;
-            free(ptr2->token);
-            tokTemp = ptr2;
-            ptr2 = ptr2->next;
-            free(tokTemp);
-        }
-        //printf("\tCOMBINED PROB: %f\n", combinedProb);
-        free(ptr->path);
-        fTemp = ptr;
-        ptr = ptr->next;
-        free(fTemp);
-    }
-}
-
-//? VALIDITY CHECK FUNCTIONS
-/*
- * Function: goodDirectory
- * Returns 1 if the argument is a valid directory name and 0 otherwise
- */
-int goodDirectory(char* path){
-    //printf("\t**Path is: %s\n", path);
-    DIR* pathDir = opendir(path);
-    //printf("->*Opened the directory\n");
-    int ret = 0;
-    if(pathDir != NULL)
-        ret = 1;
-    //printf("\t**Closing the directory..\n");
-    closedir(pathDir);
-    return ret;
-}
-
-/*
- * Function: goodFile
- * Returns 1 if the argument is a valid file and 0 otherwise
- */
-int goodFile(char* path){
-    return (open(path, O_RDONLY) > 0);
-}
 
 
 /* Function: main
@@ -623,68 +636,89 @@ int goodFile(char* path){
 int main(int argc, char** argv){    
     
     
-    //1.
-    if(!goodDirectory(argv[1])){
-        printf("Argument contains invalid directory. Error.\n");
-        return 0;
-    }
-    printf("Starting step 2\n");
-    //2. 
-    pthread_mutex_t *mutx = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(mutx, NULL);
     
-    printf("Starting step 3\n");
-    //3. NOTE: headPTR does not correspond with any file.
-    fileNode *headPtr = (fileNode *)malloc(sizeof(fileNode));
-    headPtr->next = NULL;
-
-    printf("Starting step 4\n");
-    //4.
-    thrdArg* args = (thrdArg *)malloc(sizeof(thrdArg));
-    args->fileLLHead = headPtr;
-    args->mut = mutx;
-    args->thrdFilePath = argv[1];
-
-    printf("Starting step 5\n");
-    //5. 
-    direcHandler((void *)args);
-    if(headPtr->next == NULL){
-        printf("Error: Nothing detected\n");
-        return 1;
-    }
-    fileNode *temp = headPtr;
-    headPtr = headPtr->next;
-    free(temp);
-
-    printf("Starting step 6\n");
-    //6.
-    if(headPtr->next == NULL){
-        printf("Warning: Only one regular file was detected!\n");
-        return 1;
-    }
-    fileMergeSort(&headPtr); //its that easy
-    printDataStruct(headPtr);
-
-
-    printf("Starting step 7\n");
-    //7.
-    fileNode* dsPtr;
-    fileNode* dsPtr2;
+    int i;
+    /*
+    printf("-----------------------UNIT TESTING TOKENIZER--------------------\n");
     
-    //TODO fix this for loop kek
-    for(dsPtr = headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
-        for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
-            //printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
-            //double jsd = jensenShannonDist(dsPtr, dsPtr2);
-            //printf("%f %s %s\n", jsd ,dsPtr->path, dsPtr2->path);
+        fileNode *f1 = (fileNode*)malloc(sizeof(fileNode));
+        f1->tokCount = 0;
+        f1->next = NULL;
+        f1->tokens = NULL;
+        f1->path = "/Users/akan/Desktop/Asst2Deubg/testtxt.txt";
+        tokenizeFilePtr(f1);
+
+        tokNode* t1 = f1->tokens;
+        
+        
+        printf("\n");
+        fileNode* f2 = (fileNode*)malloc(sizeof(fileNode));
+        f2->tokCount = 0;
+        f2->next = NULL;
+        f2->tokens = NULL;
+        f2->path = "/Users/akan/Desktop/Asst2Deubg/testtxt2.txt";
+        f1->next = f2;
+        tokenizeFilePtr(f2);
+
+        tokNode* t2 = f2->tokens;
+
+        
+
+        printf("tokCount: |%d|\t\t", f1->tokCount);
+        while(t1){
+            printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
+            if(t1->next){
+                printf("->");
+            }
+            t2 = t1;
+            t1=t1->next;
+            //free(t2);
         }
-    } 
-    printf("Started step 8\n");
+        printf("\n");
+        t2 = f2->tokens;
+        printf("tokCount: |%d|\t\t", f2->tokCount);
+        while(t2){
+            printf("[  %s | %d | %f  ]", t2->token, t2->freq, t2->discreteProb);
+            if(t2->next){
+                printf("->");
+            }
+            t1 = t2;
+            //free(t1);
+            t2=t2->next;
+        }
+        printf("\n");
+        
+        double kekw = jensenShannonDist(f1,f2);
+        printf("JENNSENSHANNONDISTANCE = %f\n", kekw);
+
+        free(f1);
+        free(f2);
+        */
+        printf("---------------Testing direcHandler and fileHandler without using the dataStructure----------------\n");
+        thrdArg* stuff = (thrdArg*)malloc(sizeof(thrdArg));
+        pthread_mutex_t* mutx = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+        
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+        pthread_mutex_init(mutx, NULL);
+        fileNode** headPtr = (fileNode**)malloc(sizeof(fileNode*));
+        stuff->fileLLHead = headPtr;
+        stuff->mut = mutx;
+        *(stuff->fileLLHead) = NULL;
+        char* str = "/Users/akan/Desktop/Asst2Deubg/Test";
+        stuff->thrdFilePath = (char*)malloc(strlen(str)+1);
+        strcpy(stuff->thrdFilePath, str);
+        direcHandler((void*)stuff);
+        //fileHandler((void *)stuff);
+        printDataStruct(headPtr);
+        pthread_mutexattr_destroy(&attr);
+
+
     //8.
-    free(mutx);
-    freeDatastructure(headPtr);
+    //free(mutx);
+    //freeDatastructure(headPtr);
     
 
-    //printf("%s, %d\n", concatPath("Hello/", "yark.txt"), (int)strlen(concatPath("Hello/", "yark.txt")));
     return 0;
 }
