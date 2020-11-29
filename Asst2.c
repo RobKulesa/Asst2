@@ -735,7 +735,7 @@ int main(int argc, char** argv) {
     //TODO fix this for loop kek
     for(dsPtr = *headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
         for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
-            //printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
+            printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
             //double jsd = jensenShannonDist(dsPtr, dsPtr2);
             //printf("%f %s %s\n", jsd ,dsPtr->path, dsPtr2->path);
         }
