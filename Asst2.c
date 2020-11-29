@@ -129,6 +129,8 @@ void *direcHandler(void *argStruct) {
                 if(debugDH) printf("direcHandler | %s:\t->Path before calling fileHandler on it: %s\n",args->thrdFilePath, newThrdArg->thrdFilePath);
                 pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
                 if(debugDH) printf("direcHandler | %s:\t->Path after calling fileHandler on it: %s\n",args->thrdFilePath, newThrdArg->thrdFilePath);
+            } else {
+                pthread_exit(0);
             }
         }
     
