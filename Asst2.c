@@ -168,9 +168,7 @@ void *fileHandler(void *argStruct){
     thrdArg *args = (thrdArg *)argStruct;
     pthread_mutex_lock(args->mut);
     if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
-        char* temp = (char*) malloc(strlen(args->thrdFilePath));
-        strncpy(temp, args->thrdFilePath, strlen(args->thrdFilePath) - 1);
-        printf("************************%s\n", args->thrdFilePath);
+        args->thrdFilePath[strlen(args->thrdFilePath) - 1] = '\0'
     }
     if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
     if(!goodFile(args->thrdFilePath))
