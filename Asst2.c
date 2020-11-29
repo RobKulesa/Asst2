@@ -168,6 +168,7 @@ void *fileHandler(void *argStruct){
     
     thrdArg *args = (thrdArg *)argStruct;
     pthread_mutex_lock(args->mut);
+    printf("********************last char: %s\n", args->thrdFilePath[strlen(args->thrdFilePath) - 1]);
     if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
         args->thrdFilePath[strlen(args->thrdFilePath) - 1] = '\0';
         printf("********************new: %s\n", args->thrdFilePath);
