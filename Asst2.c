@@ -511,8 +511,10 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     if(debugJSD) printf("JSD | Finished assigning f1Ptr  and f2Ptrs\n");
     //Iterate through fileNodes to create mean token list
     while(f1Ptr != NULL && f2Ptr != NULL) {
+        if(debugJSD) printf("JSD | strcmp: [%s] and [%s]\n");
         if(strcmp(f1Ptr->token, f2Ptr->token) == 0) { //In the case where f1 and f2 point to tokens of equal value
             if(meanHead == NULL){
+                if(debugJSD) printf("JSD | Mean List declaration because it doesn't exist\n");
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
                 meanHead->token = f1Ptr->token;
                 meanHead->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
@@ -521,6 +523,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 while(meanPtr->next != NULL){
                     meanPtr = meanPtr->next;
                 }
+                if(debugJSD) printf("JSD | Iterating until we find the last Mean Node\n");
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
                 meanPtr->next->token = f1Ptr->token;
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
@@ -585,6 +588,9 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         f2Ptr = f2Ptr->next;
         }
     }
+
+
+
     tokNode* t1 = meanHead;
     printf("Mean Token List:\t");
     while(t1){
