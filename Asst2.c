@@ -168,9 +168,9 @@ void *fileHandler(void *argStruct){
     
     thrdArg *args = (thrdArg *)argStruct;
     pthread_mutex_lock(args->mut);
-    printf("********************last char: %s\n", args->thrdFilePath[strlen(args->thrdFilePath) - 1]);
-    if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
-        args->thrdFilePath[strlen(args->thrdFilePath) - 1] = '\0';
+    printf("********************last char of (%s) of len(%ld): %c\n", args->thrdFilePath, strlen(args->thrdFilePath), args->thrdFilePath[strlen(args->thrdFilePath) - 1]);
+    if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
+        args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
         printf("********************new: %s\n", args->thrdFilePath);
     }
     if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
@@ -213,7 +213,7 @@ void *fileHandler(void *argStruct){
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
     
-    freeThrdArg(args);
+    //freeThrdArg(args);
 
     
     
