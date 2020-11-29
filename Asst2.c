@@ -64,10 +64,10 @@ void *direcHandler(void *argStruct) {
     args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
     args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
+    if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
+            args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0'; 
+    }
     if(!goodDirectory(args->thrdFilePath)) {
-        if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
-            args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
-        }
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
     }
