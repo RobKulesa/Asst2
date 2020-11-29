@@ -518,7 +518,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
                 meanHead->token = f1Ptr->token;
                 meanHead->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
-                meanHead->next = NULL
+                meanHead->next = NULL;
             } else{
                 tokNode *meanPtr = meanHead;
                 while(meanPtr->next != NULL){
