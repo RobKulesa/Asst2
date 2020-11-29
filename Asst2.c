@@ -550,6 +550,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
                 meanHead->token = f2Ptr->token;
                 meanHead->discreteProb = (f2Ptr->discreteProb) / 2.0;
+                meanHead->next = NULL;
             } else{
                 tokNode *meanPtr = meanHead;
                 while(meanPtr->next != NULL){
@@ -558,6 +559,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
                 meanPtr->next->token = f2Ptr->token;
                 meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
+                meanPtr->next->next = NULL;
             }
             f2Ptr = f2Ptr->next;
         }
