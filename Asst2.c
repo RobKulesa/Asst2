@@ -57,9 +57,13 @@ fileNode* merge (fileNode *f1, fileNode *f2);
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr);
 void fixFileName(char* badFilePath);
 
-void *direcHandler(void *argStruct){
+void *direcHandler(void *argStruct) {
     //1
-    thrdArg *args = (thrdArg *)argStruct;
+    thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
+    args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
+    args->mut = ((thrdArg*) argStruct)->mut;
+    args->thrdFilePath = (char *) malloc(strlen(((thrdArg*) argStruct)->thrdFilePath) + 1);
+    strcpy(args->thrdFilePath, ((thrdArg*) argStruct)->thrdFilePath);
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
         //printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
@@ -83,7 +87,9 @@ void *direcHandler(void *argStruct){
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
                 newThrdArg->mut = args->mut;
                 newThrdArg->fileLLHead = args->fileLLHead;
-                newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                char* temp33 = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                newThrdArg->thrdFilePath = (char *) malloc(strlen(temp33) + 1);
+                strcpy(newThrdArg->thrdFilePath, temp33); 
                 if(!usingThreads) direcHandler(newThrdArg);
                 else {
                     if(threadArr == NULL){
@@ -132,12 +138,12 @@ void *direcHandler(void *argStruct){
         for(i = 0; i < thrdIndex+1; i++){
             pthread_join(threadArr[i],NULL);
         }
-        //free(threadArr);
+        free(threadArr);
     }
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
-    //freeThrdArg(args);
+    freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
     return (void *)0;
 }
