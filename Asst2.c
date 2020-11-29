@@ -68,8 +68,8 @@ void *direcHandler(void *argStruct) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
     }
-    pthread_t* threadArr;
-    int thrdIndex;
+    pthread_t* threadArr = NULL;
+    int thrdIndex = -1;
     threadArr = NULL;
     thrdIndex = -1;
     DIR* thrdDirec = opendir(args->thrdFilePath);
@@ -160,7 +160,7 @@ void *fileHandler(void *argStruct){
         pthread_mutex_unlock(args->mut);
         return (void *)1;
     }
-    fileNode* ptr;
+    fileNode* ptr = NULL;
     fileNode** headPtrPtr = args->fileLLHead;
     if (debugFH) printf("\tfileHandler | %s:\tTestline 1\n", args->thrdFilePath);
     if(*(headPtrPtr) == NULL){
@@ -223,7 +223,7 @@ void tokenizeFilePtr(fileNode *ptr){
     //Iterate through buffer
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: Starting Tokenization Process\n", ptr->path);
     tokNode *tokPtrCurr = ptr->tokens;
-    tokNode *tokPtrPrev;
+    tokNode *tokPtrPrev = NULL;
     int i = 0;
     int tokIndex = 0;
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: Starting for loop\n", ptr->path);
@@ -319,7 +319,7 @@ void tokenizeFilePtr(fileNode *ptr){
         if(debugTok) printf("\t\ttokenizeFilePtr | %s: Test6\n", ptr->path);
     }
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: Calculating Discrete Probabilities\n", ptr->path);
-    tokNode *tokPtrTemp;
+    tokNode *tokPtrTemp = NULL;
     ptr->tokCount =tokCount;
     for(tokPtrTemp = ptr->tokens; tokPtrTemp!=NULL; tokPtrTemp = tokPtrTemp->next){
         if(debugTok) printf("\t\ttokenizeFilePtr | %s: Calculating Discrete Probability for %s\n", ptr->path, tokPtrTemp->token);
@@ -337,8 +337,8 @@ void tokenizeFilePtr(fileNode *ptr){
  */
 void fileMergeSort(fileNode** headRef) {
     fileNode* headPtr = *headRef;
-    fileNode* ptr1;
-    fileNode* ptr2;
+    fileNode* ptr1 = NULL;
+    fileNode* ptr2 = NULL;
     if(headPtr == NULL || headPtr->next == NULL) {
         return;
     }
@@ -348,8 +348,8 @@ void fileMergeSort(fileNode** headRef) {
 }
 
 void split(fileNode* src, fileNode** leftPtr, fileNode** rightPtr) {
-    fileNode* fast;
-    fileNode* slow;
+    fileNode* fast = NULL;
+    fileNode* slow = NULL;
     slow = src;
     fast = src->next;
     while(fast != NULL) { 
@@ -413,9 +413,9 @@ void fixFileName(char* badFileName){
 
 void printDataStruct(fileNode** headPtr){
     fileNode *ptr = *headPtr;
-    fileNode *fTemp;
-    tokNode *ptr2;
-    tokNode *tokTemp;
+    fileNode *fTemp = NULL;
+    tokNode *ptr2 = NULL;
+    tokNode *tokTemp = NULL;
     
     while(ptr!=NULL){
         double combinedProb = 0.0;
@@ -447,9 +447,9 @@ void freeThrdArg(thrdArg* argStruct){
 
 void freeDatastructure(fileNode** headPtr){
     fileNode *ptr = *headPtr;
-    fileNode *fTemp;
-    tokNode *ptr2;
-    tokNode *tokTemp;
+    fileNode *fTemp = NULL;
+    tokNode *ptr2 = NULL;
+    tokNode *tokTemp = NULL;
     
     while(ptr!=NULL){
         double combinedProb = 0.0;
@@ -689,17 +689,17 @@ int main(int argc, char** argv) {
     printf("Starting step 5\n");
     //5. 
     direcHandler((void *)args);
-    if((*headPtr)->next == NULL){
-        printf("Error: Nothing detected\n");
-        return 1;
-    }
+    //if((*headPtr)->next == NULL){
+    //    printf("Error: Nothing detected\n");
+    //    return 1;
+    //}
 
     printf("Starting step 6\n");
     //6.
-    if((*headPtr)->next == NULL){
-        printf("Warning: Only one regular file was detected!\n");
-        return 1;
-    }
+    //if((*headPtr)->next == NULL){
+    //    printf("Warning: Only one regular file was detected!\n");
+    //    return 1;
+    //}
     fileMergeSort(headPtr); //its that easy
     printDataStruct(headPtr);
 
