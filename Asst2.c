@@ -17,6 +17,7 @@ int debugDH = 1;
 int debugFH = 1;
 int debugTok = 0;
 int usingThreads = 1;
+int debugJSD = 1;
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -503,10 +504,11 @@ int goodFile(char* path){
 
 double jensenShannonDist(fileNode *f1, fileNode *f2){
     //Initialize Pointers
+    if(debugJSD) printf("JSD | Initiating\n");
     tokNode *meanHead = NULL;
     tokNode *f1Ptr = f1->tokens;
     tokNode *f2Ptr = f2->tokens;
-    
+    if(debugJSD) printf("JSD | Finished assigning f1Ptr  and f2Ptrs\n");
     //Iterate through fileNodes to create mean token list
     while(f1Ptr != NULL && f2Ptr != NULL) {
         if(strcmp(f1Ptr->token, f2Ptr->token) == 0) { //In the case where f1 and f2 point to tokens of equal value
