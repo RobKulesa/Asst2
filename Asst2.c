@@ -85,11 +85,11 @@ void *direcHandler(void *argStruct){
                 newThrdArg->fileLLHead = args->fileLLHead;
                 newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
                 if(!usingThreads) direcHandler(newThrdArg);
-                else{
+                else {
                     if(threadArr == NULL){
                         threadArr = (pthread_t*)malloc(sizeof(pthread_t));
                         thrdIndex++;
-                    } else{
+                    } else {
                         pthread_t* temp = threadArr;
                         threadArr = (pthread_t*)malloc(sizeof(pthread_t)*(thrdIndex+2));
                         memcpy(threadArr, temp, (size_t)(sizeof(pthread_t)*(thrdIndex+1)));
@@ -684,7 +684,7 @@ int main(int argc, char** argv) {
     stuff->fileLLHead = headPtr;
     stuff->mut = mutx;
     *(stuff->fileLLHead) = NULL;
-//  char* str = "./Example";
+    //  char* str = "./Example";
     stuff->thrdFilePath = (char*)malloc(strlen(buf)+1);
     strcpy(stuff->thrdFilePath, buf);
     direcHandler((void*)stuff);
