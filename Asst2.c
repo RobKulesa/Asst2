@@ -65,7 +65,8 @@ void *direcHandler(void *argStruct) {
     args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
-            args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0'; 
+        args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
+        printf("***************NEW: %s\n", args->thrdFilePath) 
     }
     if(!goodDirectory(args->thrdFilePath)) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
@@ -76,7 +77,7 @@ void *direcHandler(void *argStruct) {
     threadArr = NULL;
     thrdIndex = -1;
     DIR* thrdDirec = opendir(args->thrdFilePath);
-    struct dirent *thrdDirent = readdir(thrdDirec);
+    struct dirent *thrdDirent = NULL;
     while((thrdDirent = readdir(thrdDirec)), thrdDirent!=NULL){
         if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")) {
             if(debugDH) printf("direcHandler | %s:\td_name is %s\n", args->thrdFilePath,(thrdDirent->d_name));
