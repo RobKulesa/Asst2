@@ -725,25 +725,23 @@ int main(int argc, char** argv) {
     //7.
     fileNode* dsPtr;
     fileNode* dsPtr2;
-    char* begColor;
     //TODO fix this for loop kek
     for(dsPtr = *headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
         for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
             if(debugJSD) printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
             double jsd = jensenShannonDist(dsPtr, dsPtr2);
             if(jsd > 0.3)
-                begColor = "\033[0m";
+                printf("\033[0m");
             else if(jsd > 0.25)
-                begColor = "\033[0;34m";
+                printf("\033[0;34m");
             else if(jsd > 0.2)
-                begColor = "\033[0;36m";
+                printf("\033[0;36m");
             else if(jsd > 0.15)
-                begColor = "\033[0;32m";
+                printf("\033[0;32m");
             else if(jsd > 0.1)
-                begColor = "\033[0;33m";
+                printf("\033[0;33m");
             else
-                begColor = "\033[0;31m";
-            printf(begColor);
+                printf("\033[0;31m");
             printf("%f", jsd);
             printf("\033[0m \"%s\" and \"%s\"", dsPtr->path, dsPtr2->path);
         }
