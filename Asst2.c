@@ -60,13 +60,13 @@ void fixFileName(char* badFilePath);
 void *direcHandler(void *argStruct) {
     //1
     thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
-    args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
     args->mut = ((thrdArg*) argStruct)->mut;
-    args->thrdFilePath = (char *) malloc(strlen(((thrdArg*) argStruct)->thrdFilePath) + 1);
-    strcpy(args->thrdFilePath, ((thrdArg*) argStruct)->thrdFilePath);
+    pthread_mutex_lock(args->mut);
+    args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
+    args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
-        //printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
+        printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
     }
     pthread_t* threadArr;
@@ -85,11 +85,6 @@ void *direcHandler(void *argStruct) {
                 //3aI
                 if(debugDH) printf("direcHandler | %s:\t->Path found is directory\n",args->thrdFilePath);
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));
-                newThrdArg->mut = args->mut;
-                newThrdArg->fileLLHead = args->fileLLHead;
-                char* temp33 = concatPath(args->thrdFilePath, thrdDirent->d_name);
-                newThrdArg->thrdFilePath = (char *) malloc(strlen(temp33) + 1);
-                strcpy(newThrdArg->thrdFilePath, temp33); 
                 if(!usingThreads) direcHandler(newThrdArg);
                 else {
                     if(threadArr == NULL){
@@ -102,32 +97,35 @@ void *direcHandler(void *argStruct) {
                         free(temp);
                         thrdIndex++;
                     }
+                    newThrdArg->mut = args->mut;
+                    newThrdArg->fileLLHead = args->fileLLHead;
+                    newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                    pthread_mutex_unlock(args->mut);
                     pthread_create(threadArr+thrdIndex, NULL, direcHandler,newThrdArg);
                 }
                 
             } else if(thrdDirent->d_type == DT_REG) {
-                
                 if(debugDH) printf("direcHandler | %s:\t->Path found is a normal file\n",args->thrdFilePath);
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));                
-                newThrdArg->mut = args->mut;
-                newThrdArg->fileLLHead = args->fileLLHead;
-                char* temp33 = concatPath(args->thrdFilePath, thrdDirent->d_name);
-                newThrdArg->thrdFilePath = (char *) malloc(strlen(temp33) + 1);
-                strcpy(newThrdArg->thrdFilePath, temp33); 
+                
                 if(!usingThreads) fileHandler(newThrdArg);
-                else{
+                else {
                     if(threadArr == NULL){
                         threadArr = (pthread_t*)malloc(sizeof(pthread_t));
                         thrdIndex++;
                     } else{
                         pthread_t* temp = threadArr;
                         threadArr = (pthread_t*)malloc(sizeof(pthread_t)*(thrdIndex+2));
-                                        if(debugDH) printf("direcHandler | %s:\t->Path found is a normal file\n",args->thrdFilePath);
+                        if(debugDH) printf("direcHandler | %s:\t->Path found is a normal file\n",args->thrdFilePath);
 
                         memcpy(threadArr, temp, (size_t)(sizeof(pthread_t)*(thrdIndex+1)));
                         free(temp);
                         thrdIndex++;
                     }
+                    newThrdArg->mut = args->mut;
+                    newThrdArg->fileLLHead = args->fileLLHead;
+                    newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                    pthread_mutex_unlock(args->mut);
                     pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
                 }
                 //freeThrdArg(newThrdArg);
@@ -672,7 +670,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
 int main(int argc, char** argv) {
     
 
-    char buf[PATH_MAX]; /* PATH_MAX incudes the \0 so +1 is not required */
+/*     char buf[PATH_MAX];
     char *res = realpath(argv[1], buf);
     if(res) {
         printf("This source is at %s.\n", buf);
@@ -680,8 +678,7 @@ int main(int argc, char** argv) {
         perror("realpath");
         exit(EXIT_FAILURE);
     }
-
-    printf("---------------Testing direcHandler and fileHandler without using the dataStructure----------------\n");
+ */
     thrdArg* stuff = (thrdArg*)malloc(sizeof(thrdArg));
     pthread_mutex_t* mutx = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
         
@@ -694,8 +691,8 @@ int main(int argc, char** argv) {
     stuff->mut = mutx;
     *(stuff->fileLLHead) = NULL;
     //  char* str = "./Example";
-    stuff->thrdFilePath = (char*)malloc(strlen(buf)+1);
-    strcpy(stuff->thrdFilePath, buf);
+    stuff->thrdFilePath = (char*)malloc(strlen(argv[1])+1);
+    strcpy(stuff->thrdFilePath, argv[1]);
     direcHandler((void*)stuff);
     //fileHandler((void *)stuff);
     printDataStruct(headPtr);

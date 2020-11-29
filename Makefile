@@ -12,3 +12,4 @@ all: $(OUTPUT)
 
 clean:
 	rm -f *.o $(OUTPUT)
+
