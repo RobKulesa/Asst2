@@ -177,7 +177,6 @@ void *fileHandler(void *argStruct){
             if (debugFH) printf("\tfileHandler | %s:\tTestline 4\n", args->thrdFilePath);
             ptr = ptr->next;
         }
-
         ptr->next = (fileNode*)malloc(sizeof(fileNode));
         if (debugFH) printf("\tfileHandler | %s:\tTestline 7\n", args->thrdFilePath);
         ptr = ptr->next;
@@ -762,6 +761,7 @@ int main(int argc, char** argv) {
     pthread_mutexattr_destroy(&attr);
     free(mutx);
     freeDatastructure(headPtr);
+    free(res);
     
 
     return 0;
