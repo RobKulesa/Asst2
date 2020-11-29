@@ -69,6 +69,10 @@ void *direcHandler(void *argStruct) {
         args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
         printf("***************NEW: %s\n", args->thrdFilePath); 
     }
+    if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
+        args->thrdFilePath[strlen(args->thrdFilePath) - 1] = '\0';
+        printf("***************NEW: %s\n", args->thrdFilePath); 
+    }
     if(!goodDirectory(args->thrdFilePath)) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
@@ -160,6 +164,18 @@ void *fileHandler(void *argStruct){
     
     thrdArg *args = (thrdArg *)argStruct;
     pthread_mutex_lock(args->mut);
+    if(args->thrdFilePath[strlen(args->thrdFilePath)-1] != 't') {
+        char* temp = (char*) malloc(sizeof(args->thrdFilePath));
+        int idx = 0;
+        for(idx = 0; idx < strlen(args->thrdFilePath); idx++) {
+            temp[idx] = args->thrdFilePath[idx+1];
+        }
+        temp[idx-1] = 't';
+        temp[idx] = '\0';
+        args->thrdFilePath = strcpy(args->thrdFilePath, temp);
+        printf("\t\t********NEW: %s\n", args->thrdFilePath);
+        free(temp);
+    }
     if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
     if(!goodFile(args->thrdFilePath)) {
         pthread_mutex_unlock(args->mut);
@@ -203,7 +219,7 @@ void *fileHandler(void *argStruct){
     pthread_mutex_unlock(args->mut);
     
     //freeThrdArg(args);
-
+    //free(ptr);
     
     
     return (void *)0;
