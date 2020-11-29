@@ -1,5 +1,5 @@
 OUTPUT=Asst2
-CFLAGS=-g -pthread -Wall -std=gnu99
+CFLAGS=-g -pthread -Wall
 LFLAGS=-lm
 
 %: %.c %.h
