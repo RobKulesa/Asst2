@@ -511,7 +511,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     if(debugJSD) printf("JSD | Finished assigning f1Ptr  and f2Ptrs\n");
     //Iterate through fileNodes to create mean token list
     while(f1Ptr != NULL && f2Ptr != NULL) {
-        if(debugJSD) printf("JSD | strcmp: [%s] and [%s]\n");
+        if(debugJSD) printf("JSD | strcmp: [%s] and [%s]\n", f1Ptr->token,f2Ptr->token);
         if(strcmp(f1Ptr->token, f2Ptr->token) == 0) { //In the case where f1 and f2 point to tokens of equal value
             if(meanHead == NULL){
                 if(debugJSD) printf("JSD | Mean List declaration because it doesn't exist\n");
