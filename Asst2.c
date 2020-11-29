@@ -529,7 +529,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 }
                 if(debugJSD) printf("JSD | Iterating until we find the last Mean Node\n");
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                meanPtr->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
                 strcpy(meanHead->next->token,f1Ptr->token);
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
@@ -549,7 +549,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                     meanPtr = meanPtr->next;
                 }
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                meanPtr->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
                 strcpy(meanHead->next->token,f1Ptr->token);
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
@@ -568,7 +568,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                     meanPtr = meanPtr->next;
                 }
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->next->token = (char*)malloc(strlen(f2Ptr->token)+1);
+                meanPtr->next->token = (char*)malloc(strlen(f2Ptr->token)+1);
                 strcpy(meanHead->next->token,f2Ptr->token);
                 meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
@@ -584,7 +584,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             meanPtr = meanPtr->next;
         while(f1Ptr!=NULL){
             meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-            meanPtr->next->token = f1Ptr->token;
+            meanPtr->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
+            strcpy(meanHead->next->token,f1Ptr->token);
             meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
             meanPtr = meanPtr->next;
             f1Ptr = f1Ptr->next;
@@ -595,8 +596,9 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         while(meanPtr->next != NULL)
             meanPtr = meanPtr->next;
         while(f2Ptr!=NULL){
-            meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-        meanPtr->next->token = f2Ptr->token;
+        meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
+        meanPtr->next->token = (char*)malloc(strlen(f2Ptr->token)+1);
+        strcpy(meanHead->next->token,f2Ptr->token);
         meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
         meanPtr = meanPtr->next;
         f2Ptr = f2Ptr->next;
