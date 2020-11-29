@@ -10,10 +10,12 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
+
 //TODO: Debug globlas
 int debugDH = 1;
 int debugFH = 1;
-int debugTok = 1;
+int debugTok = 0;
 int usingThreads = 1;
 //TODO: Structs
 typedef struct tokNode{
@@ -134,7 +136,7 @@ void *direcHandler(void *argStruct){
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
-    //freeThrdArg(args);
+    freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
     return (void *)0;
 }
@@ -199,7 +201,7 @@ void *fileHandler(void *argStruct){
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
     
-    //freeThrdArg(args);
+    freeThrdArg(args);
 
     
     
@@ -659,65 +661,38 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
  *      3. The mutex
  */
 int main(int argc, char** argv) {
-    if(!goodDirectory(argv[1])) {
-        printf("Argument contains invalid directory. Error.\n");
-        return 0;
+    
+
+    char buf[PATH_MAX]; /* PATH_MAX incudes the \0 so +1 is not required */
+    char *res = realpath(argv[1], buf);
+    if(res) {
+        printf("This source is at %s.\n", buf);
+    } else {
+        perror("realpath");
+        exit(EXIT_FAILURE);
     }
-    printf("Starting step 2\n");
-    //2. 
-    pthread_mutex_t *mutx = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+
+    printf("---------------Testing direcHandler and fileHandler without using the dataStructure----------------\n");
+    thrdArg* stuff = (thrdArg*)malloc(sizeof(thrdArg));
+    pthread_mutex_t* mutx = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+        
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
     pthread_mutex_init(mutx, NULL);
-    
-    printf("Starting step 3\n");
-    //3. NOTE: headPTR does not correspond with any file.
-    fileNode **headPtr = (fileNode**)malloc(sizeof(fileNode*));
-    *headPtr = NULL;
-    
-
-    printf("Starting step 4\n");
-    //4.
-    thrdArg* args = (thrdArg *)malloc(sizeof(thrdArg));
-    args->fileLLHead = headPtr;
-    args->mut = mutx;
-    args->thrdFilePath = (char *)malloc(strlen(argv[1]) + 1);
-    strcpy(args->thrdFilePath , argv[1]);
-    
-
-    printf("Starting step 5\n");
-    //5. 
-    direcHandler((void *)args);
-    if((*headPtr)->next == NULL) {
-        printf("Error: Nothing detected\n");
-        return 1;
-    }
-    fileNode *temp2 = *headPtr;
-    *headPtr = (*headPtr)->next;
-    free(temp2);
-
-    printf("Starting step 6\n");
-    //6.
-    if((*headPtr)->next == NULL){
-        printf("Warning: Only one regular file was detected!\n");
-        return 1;
-    }
-    fileMergeSort(headPtr); 
+    fileNode** headPtr = (fileNode**)malloc(sizeof(fileNode*));
+    stuff->fileLLHead = headPtr;
+    stuff->mut = mutx;
+    *(stuff->fileLLHead) = NULL;
+//  char* str = "./Example";
+    stuff->thrdFilePath = (char*)malloc(strlen(buf)+1);
+    strcpy(stuff->thrdFilePath, buf);
+    direcHandler((void*)stuff);
+    //fileHandler((void *)stuff);
     printDataStruct(headPtr);
+    pthread_mutexattr_destroy(&attr);
 
-
-    printf("Starting step 7\n");
-    //7.
-    fileNode* dsPtr;
-    fileNode* dsPtr2;
     
-    for(dsPtr = (*headPtr); dsPtr->next != NULL; dsPtr = dsPtr->next) {
-        for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
-            printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
-            double jsd = jensenShannonDist(dsPtr, dsPtr2);
-            printf("%f %s %s\n", jsd ,dsPtr->path, dsPtr2->path);
-        }
-    } 
-    printf("Started step 8\n");
-    //8.
     free(mutx);
     freeDatastructure(headPtr);
     return 0;
