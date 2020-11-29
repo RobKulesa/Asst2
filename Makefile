@@ -1,4 +1,5 @@
-OUTPUT=Asst2
+INPUT = Asst2
+OUTPUT=detector
 CFLAGS=-g -pthread -Wall
 LFLAGS=-lm
 
@@ -6,9 +7,9 @@ LFLAGS=-lm
 	gcc $(CFLAGS) -o $@ $< $(LFLAGS)
 
 %: %.c
-	gcc $(CFLAGS) -o $@ $< $(LFLAGS)
+	gcc $(CFLAGS) -o $(OUTPUT) $< $(LFLAGS)
 
-all: $(OUTPUT)
+all: $(INPUT)
 
 clean:
 	rm -f *.o $(OUTPUT)
