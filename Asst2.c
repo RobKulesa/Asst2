@@ -18,6 +18,7 @@ int debugFH = 0;
 int debugTok = 0;
 int usingThreads = 1;
 int debugJSD = 0;
+int debugMain = 0;
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -673,7 +674,7 @@ int main(int argc, char** argv) {
     char buf[PATH_MAX];
     char *res = realpath(argv[1], buf);
     if(res) {
-        printf("This source is at %s.\n", buf);
+        if(debugMain) printf("This source is at %s.\n", buf);
     } else {
         perror("realpath");
         exit(EXIT_FAILURE);
@@ -683,7 +684,7 @@ int main(int argc, char** argv) {
         printf("Argument contains invalid directory. Error.\n");
         return 0;
     }
-    printf("Starting step 2\n");
+    if(debugMain)printf("Starting step 2\n");
     //2. 
     pthread_mutex_t *mutx = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
     pthread_mutexattr_t attr;
@@ -691,11 +692,11 @@ int main(int argc, char** argv) {
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
     pthread_mutex_init(mutx, NULL);
     
-    printf("Starting step 3\n");
+    if(debugMain)printf("Starting step 3\n");
     //3. NOTE: headPTR does not correspond with any file.
     fileNode** headPtr = (fileNode**)malloc(sizeof(fileNode));
 
-    printf("Starting step 4\n");
+    if(debugMain)printf("Starting step 4\n");
     //4.
     thrdArg* args = (thrdArg *)malloc(sizeof(thrdArg));
     args->fileLLHead = headPtr;
@@ -703,7 +704,7 @@ int main(int argc, char** argv) {
     *(args->fileLLHead) = NULL;
     args->thrdFilePath = (char*)malloc(strlen(buf)+1);
     strcpy(args->thrdFilePath, buf);
-    printf("Starting step 5\n");
+    if(debugMain)printf("Starting step 5\n");
     //5. 
     direcHandler((void *)args);
     if((*headPtr)->next == NULL){
@@ -711,17 +712,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    printf("Starting step 6\n");
+    if(debugMain) printf("Starting step 6\n");
     //6.
     if((*headPtr)->next == NULL){
         printf("Warning: Only one regular file was detected!\n");
         return 1;
     }
     fileMergeSort(headPtr); //its that easy
-    printDataStruct(headPtr);
+    if(debugMain)printDataStruct(headPtr);
 
 
-    printf("Starting step 7\n");
+    if(debugMain) printf("Starting step 7\n");
     //7.
     fileNode* dsPtr;
     fileNode* dsPtr2;
@@ -743,10 +744,10 @@ int main(int argc, char** argv) {
             else
                 printf("\033[0;31m");
             printf("%f", jsd);
-            printf("\033[0m \"%s\" and \"%s\"", dsPtr->path, dsPtr2->path);
+            printf("\033[0m \"%s\" and \"%s\"\n", dsPtr->path, dsPtr2->path);
         }
     } 
-    printf("Started step 8\n");
+    if(debugMain)printf("Started step 8\n");
     //8.
     free(mutx);
     freeDatastructure(headPtr);
