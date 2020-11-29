@@ -61,9 +61,12 @@ void fixFileName(char* badFilePath);
 
 void *direcHandler(void *argStruct) {
     //1
+    /*
     thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
     args->mut = ((thrdArg*) argStruct)->mut;
     args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
+    */
+    thrdArg* args = (thrdArg*)argStruct;
     args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
@@ -761,7 +764,6 @@ int main(int argc, char** argv) {
     pthread_mutexattr_destroy(&attr);
     free(mutx);
     freeDatastructure(headPtr);
-    free(res);
     
 
     return 0;
