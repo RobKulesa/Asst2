@@ -640,7 +640,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             f2Ptr = f2Ptr->next;
             
         }
-    }--
+    }
 
     //printf("Not skipping: here are the calculations:\n");
     printf("KLD2: %f\n", KLDF2);
