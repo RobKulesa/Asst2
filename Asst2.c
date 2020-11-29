@@ -457,7 +457,7 @@ void freeDatastructure(fileNode** headPtr){
     while(ptr!=NULL){
         double combinedProb = 0.0;
         if(ptr->path != NULL){
-            printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
+            if(debugMain) printf("FILE: %s\tTokCount = %d\n", ptr->path, ptr->tokCount);
         }
         ptr2 = ptr->tokens;
         while(ptr2!=NULL){
@@ -605,7 +605,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     while(t1){
             if(debugJSD) printf("[  %s | %d | %f  ]", t1->token, t1->freq, t1->discreteProb);
             if(t1->next){
-               if(debugJSD)  printf("->\n");
+                if(debugJSD)  printf("->\n");
             }
             t1=t1->next;
             
