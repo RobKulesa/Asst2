@@ -528,6 +528,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
                 meanPtr->next->token = f1Ptr->token;
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
+                meanPtr->next->next = NULL;
             }
             f1Ptr = f1Ptr->next;
             f2Ptr = f2Ptr->next;
@@ -536,6 +537,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
                 meanHead->token = f1Ptr->token;
                 meanHead->discreteProb = (f1Ptr->discreteProb) / 2.0;
+                meanHead->next = NULL;
             } else{
                 tokNode *meanPtr = meanHead;
                 while(meanPtr->next != NULL){
@@ -544,6 +546,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
                 meanPtr->next->token = f1Ptr->token;
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
+                meanPtr->next->next = NULL;
             }
             f1Ptr = f1Ptr->next;
         } else {
@@ -578,7 +581,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             meanPtr = meanPtr->next;
             f1Ptr = f1Ptr->next;
         }
-        
+        meanPtr->next = NULL;
     } else if(f1Ptr == NULL && f2Ptr != NULL){
         tokNode *meanPtr = meanHead;
         while(meanPtr->next != NULL)
@@ -590,6 +593,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         meanPtr = meanPtr->next;
         f2Ptr = f2Ptr->next;
         }
+        meanPtr->next = NULL;
     }
 
 
