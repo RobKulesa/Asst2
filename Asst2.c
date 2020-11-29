@@ -16,7 +16,7 @@
 int debugDH = 1;
 int debugFH = 1;
 int debugTok = 0;
-int usingThreads = 1; //hi!!!
+int usingThreads = 1;
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -111,7 +111,9 @@ void *direcHandler(void *argStruct) {
                 thrdArg *newThrdArg = (thrdArg *)malloc(sizeof(thrdArg));                
                 newThrdArg->mut = args->mut;
                 newThrdArg->fileLLHead = args->fileLLHead;
-                newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                char* temp33 = concatPath(args->thrdFilePath, thrdDirent->d_name);
+                newThrdArg->thrdFilePath = (char *) malloc(strlen(temp33) + 1);
+                strcpy(newThrdArg->thrdFilePath, temp33); 
                 if(!usingThreads) fileHandler(newThrdArg);
                 else{
                     if(threadArr == NULL){
