@@ -575,7 +575,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             meanPtr->next->token = f1Ptr->token;
             meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
             meanPtr = meanPtr->next;
-            f1Ptr = f2Ptr->next;
+            f1Ptr = f1Ptr->next;
         }
         
     } else if(f1Ptr == NULL && f2Ptr != NULL){
