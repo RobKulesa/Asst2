@@ -16,7 +16,7 @@
 int debugDH = 1;
 int debugFH = 1;
 int debugTok = 0;
-int usingThreads = 1;
+int usingThreads = 1; //hi!!!
 //TODO: Structs
 typedef struct tokNode{
     char *token;
