@@ -126,8 +126,9 @@ void *direcHandler(void *argStruct) {
                     newThrdArg->fileLLHead = args->fileLLHead;
                     newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
                     pthread_mutex_unlock(args->mut);
+                    //if(debugDH) printf("direcHandler | %s:\t->Path before calling fileHandler on it: \n",args->thrdFilePath, newThrdArg->thrdFilePath);
                     pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
-                    
+                    //if(debugDH) printf("direcHandler | %s:\t->Path after calling fileHandler on it: \n",args->thrdFilePath, newThrdArg->thrdFilePath);
                 }
                 //freeThrdArg(newThrdArg);
             }
@@ -169,6 +170,7 @@ void *fileHandler(void *argStruct){
     pthread_mutex_lock(args->mut);
     if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
         args->thrdFilePath[strlen(args->thrdFilePath) - 1] = '\0';
+        printf("********************new: %s\n", args->thrdFilePath);
     }
     if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
     if(!goodFile(args->thrdFilePath))
