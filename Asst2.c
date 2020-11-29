@@ -429,16 +429,12 @@ void printDataStruct(fileNode** headPtr){
         while(ptr2!=NULL){
             printf("\tToken: %s\tFrequency: %d\tProbability: %f\n", ptr2->token, ptr2->freq, ptr2->discreteProb);
             combinedProb+=ptr2->discreteProb;
-            //free(ptr2->token);
             tokTemp = ptr2;
             ptr2 = ptr2->next;
-            //free(tokTemp);
         }
         printf("\tCOMBINED PROB: %f\n", combinedProb);
-        //free(ptr->path);
         fTemp = ptr;
         ptr = ptr->next;
-        //free(fTemp);
     }
 }
 
@@ -763,6 +759,7 @@ int main(int argc, char** argv) {
     } 
     if(debugMain)printf("Started step 8\n");
     //8.
+    pthread_mutexattr_destroy(&attr);
     free(mutx);
     freeDatastructure(headPtr);
     
