@@ -200,7 +200,7 @@ void *fileHandler(void *argStruct){
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
     
-    //freeThrdArg(args);
+    freeThrdArg(args);
 
     
     
@@ -518,7 +518,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             if(meanHead == NULL){
                 if(debugJSD) printf("JSD | Mean List declaration because it doesn't exist\n");
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->token = f1Ptr->token;
+                meanHead->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                strcpy(meanHead->token,f1Ptr->token);
                 meanHead->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
                 meanHead->next = NULL;
             } else{
@@ -528,7 +529,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                 }
                 if(debugJSD) printf("JSD | Iterating until we find the last Mean Node\n");
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanPtr->next->token = f1Ptr->token;
+                meanHead->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                strcpy(meanHead->next->token,f1Ptr->token);
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb + f2Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
             }
@@ -537,7 +539,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         } else if(strcmp(f1Ptr->token, f2Ptr->token) < 0){
             if(meanHead == NULL){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->token = f1Ptr->token;
+                meanHead->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                strcpy(meanHead->token,f1Ptr->token);
                 meanHead->discreteProb = (f1Ptr->discreteProb) / 2.0;
                 meanHead->next = NULL;
             } else{
@@ -546,7 +549,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                     meanPtr = meanPtr->next;
                 }
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanPtr->next->token = f1Ptr->token;
+                meanHead->next->token = (char*)malloc(strlen(f1Ptr->token)+1);
+                strcpy(meanHead->next->token,f1Ptr->token);
                 meanPtr->next->discreteProb = (f1Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
             }
@@ -554,7 +558,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
         } else {
             if(meanHead == NULL){
                 meanHead = (tokNode *)malloc(sizeof(tokNode));
-                meanHead->token = f2Ptr->token;
+                meanHead->token = (char*)malloc(strlen(f2Ptr->token)+1);
+                strcpy(meanHead->token,f2Ptr->token);
                 meanHead->discreteProb = (f2Ptr->discreteProb) / 2.0;
                 meanHead->next = NULL;
             } else{
@@ -563,7 +568,8 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
                     meanPtr = meanPtr->next;
                 }
                 meanPtr->next = (tokNode *)malloc(sizeof(tokNode));
-                meanPtr->next->token = f2Ptr->token;
+                meanHead->next->token = (char*)malloc(strlen(f2Ptr->token)+1);
+                strcpy(meanHead->next->token,f2Ptr->token);
                 meanPtr->next->discreteProb = (f2Ptr->discreteProb) / 2.0;
                 meanPtr->next->next = NULL;
             }
@@ -646,7 +652,13 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     //printf("Not skipping: here are the calculations:\n");
     if(debugJSD) printf("KLD2: %f\n", KLDF2);
 
-
+    while(meanHead!=NULL){
+        meanPtr = meanHead;
+        meanHead = meanHead->next;
+        free(meanPtr->token);
+        free(meanPtr);
+    }
+    
 
     return (KLDF1+KLDF2)/2;
 }
