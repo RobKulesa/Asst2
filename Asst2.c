@@ -65,6 +65,9 @@ void *direcHandler(void *argStruct) {
     args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
+        if(args->thrdFilePath[strlen(args->thrdFilePath) - 2] == '%') {
+            args->thrdFilePath[strlen(args->thrdFilePath) - 2] = '\0';
+        }
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
         return (void *)1;
     }
@@ -73,7 +76,7 @@ void *direcHandler(void *argStruct) {
     threadArr = NULL;
     thrdIndex = -1;
     DIR* thrdDirec = opendir(args->thrdFilePath);
-    struct dirent *thrdDirent;
+    struct dirent *thrdDirent = readdir(thrdDirec);
     while((thrdDirent = readdir(thrdDirec)), thrdDirent!=NULL){
         if(strcmp(thrdDirent->d_name, ".") && strcmp(thrdDirent->d_name, "..") && strcmp(thrdDirent->d_name, ".DS_Store")) {
             if(debugDH) printf("direcHandler | %s:\td_name is %s\n", args->thrdFilePath,(thrdDirent->d_name));
@@ -402,7 +405,7 @@ char *concatPath(char* beg, char* end) {
 void fixFileName(char* badFileName){
     if(strlen(badFileName) <= 0)
         return;
-    int i;
+    int i = 0;
     for(i = 0; i < strlen(badFileName)-4; i++){
         if(badFileName[i]== '.' && badFileName[i+1]=='t' && badFileName[i+2]=='x' && badFileName[i+3] == 't'){
             badFileName[i+4] = '\0';
@@ -689,25 +692,25 @@ int main(int argc, char** argv) {
     printf("Starting step 5\n");
     //5. 
     direcHandler((void *)args);
-    //if((*headPtr)->next == NULL){
-    //    printf("Error: Nothing detected\n");
-    //    return 1;
-    //}
+    if((*headPtr) == NULL){
+        printf("Error: Nothing detected\n");
+        return 1;
+    }
 
     printf("Starting step 6\n");
     //6.
-    //if((*headPtr)->next == NULL){
-    //    printf("Warning: Only one regular file was detected!\n");
-    //    return 1;
-    //}
+    if((*headPtr)->next == NULL){
+        printf("Warning: Only one regular file was detected!\n");
+        return 1;
+    }
     fileMergeSort(headPtr); //its that easy
     printDataStruct(headPtr);
 
 
     printf("Starting step 7\n");
     //7.
-    fileNode* dsPtr;
-    fileNode* dsPtr2;
+    fileNode* dsPtr = NULL;
+    fileNode* dsPtr2 = NULL;
     
     //TODO fix this for loop kek
     for(dsPtr = *headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
