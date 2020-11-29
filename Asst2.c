@@ -67,7 +67,7 @@ void *direcHandler(void *argStruct) {
     args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
     */
     thrdArg* args = (thrdArg*)argStruct;
-    args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
+    //args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
