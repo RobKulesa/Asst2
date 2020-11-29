@@ -127,6 +127,7 @@ void *direcHandler(void *argStruct) {
                     newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
                     pthread_mutex_unlock(args->mut);
                     pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
+                    
                 }
                 //freeThrdArg(newThrdArg);
             }
@@ -166,8 +167,11 @@ void *fileHandler(void *argStruct){
     
     thrdArg *args = (thrdArg *)argStruct;
     pthread_mutex_lock(args->mut);
-    
-    
+    if(args->thrdFilePath[strlen(args->thrdFilePath) - 1] == '%') {
+        char* temp = (char*) malloc(strlen(args->thrdFilePath));
+        strncpy(temp, args->thrdFilePath, strlen(args->thrdFilePath) - 1);
+        printf("************************%s\n", args->thrdFilePath);
+    }
     if (debugFH) printf("\tfileHandler | %s:\tINITIATE\n", args->thrdFilePath);
     if(!goodFile(args->thrdFilePath))
         return (void *)1;
@@ -214,9 +218,6 @@ void *fileHandler(void *argStruct){
     
     return (void *)0;
 }
-
-
-
 
 void tokenizeFilePtr(fileNode *ptr){
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: INITIATE\n", ptr->path);
@@ -648,8 +649,6 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
     return (KLDF1+KLDF2)/2;
 }
 
-
-
 /* Function: main
  * Algorithm
  * 1. Check if the commandline directory is valid/accessible
@@ -669,7 +668,6 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
  */
 int main(int argc, char** argv) {
     
-
 /*     char buf[PATH_MAX];
     char *res = realpath(argv[1], buf);
     if(res) {
@@ -690,7 +688,7 @@ int main(int argc, char** argv) {
     stuff->fileLLHead = headPtr;
     stuff->mut = mutx;
     *(stuff->fileLLHead) = NULL;
-    //  char* str = "./Example";
+    //char* str = "./Example";
     stuff->thrdFilePath = (char*)malloc(strlen(argv[1])+1);
     strcpy(stuff->thrdFilePath, argv[1]);
     direcHandler((void*)stuff);
