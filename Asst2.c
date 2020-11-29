@@ -17,7 +17,7 @@ int debugDH = 1;
 int debugFH = 1;
 int debugTok = 0;
 int usingThreads = 1;
-int debugJSD = 1;
+int debugJSD = 0;
 //TODO: Structs
 typedef struct tokNode{
     char *token;
@@ -118,6 +118,7 @@ void *direcHandler(void *argStruct) {
                 newThrdArg->mut = args->mut;
                 newThrdArg->fileLLHead = args->fileLLHead;
                 newThrdArg->thrdFilePath = concatPath(args->thrdFilePath, thrdDirent->d_name);
+
                 if(debugDH) printf("direcHandler | %s:\t->Path before calling fileHandler on it: %s\n",args->thrdFilePath, newThrdArg->thrdFilePath);
                 pthread_create(threadArr+thrdIndex, NULL, fileHandler,newThrdArg);
                 if(debugDH) printf("direcHandler | %s:\t->Path after calling fileHandler on it: %s\n",args->thrdFilePath, newThrdArg->thrdFilePath);
@@ -126,7 +127,7 @@ void *direcHandler(void *argStruct) {
     
     }
     int i;
-     for(i = 0; i < thrdIndex+1; i++){
+    for(i = 0; i < thrdIndex+1; i++){
         pthread_join(threadArr[i],NULL);
     }
     free(threadArr);
@@ -639,7 +640,7 @@ double jensenShannonDist(fileNode *f1, fileNode *f2){
             f2Ptr = f2Ptr->next;
             
         }
-    }
+    }--
 
     //printf("Not skipping: here are the calculations:\n");
     printf("KLD2: %f\n", KLDF2);
