@@ -138,7 +138,7 @@ void *direcHandler(void *argStruct) {
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
-    freeThrdArg(args);
+    //freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
     return (void *)0;
 }
