@@ -62,12 +62,12 @@ void fixFileName(char* badFilePath);
 void *direcHandler(void *argStruct) {
     //1
     
-    thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
-    args->mut = ((thrdArg*) argStruct)->mut;
-    args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
+  //  thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
+  //  args->mut = ((thrdArg*) argStruct)->mut;
+  //  args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
     
-    //thrdArg* args = (thrdArg*)argStruct;
-    args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
+    thrdArg* args = (thrdArg*)argStruct;
+  //  args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
@@ -138,7 +138,7 @@ void *direcHandler(void *argStruct) {
     closedir(thrdDirec);
     //5
     if(debugDH) printf("direcHandler | %s:\tFINISH\n", args->thrdFilePath);
-    //freeThrdArg(args);
+    freeThrdArg(args);
     if(debugDH) printf("direcHandler |:\tFINISH2\n");
     return (void *)0;
 }
@@ -201,8 +201,7 @@ void *fileHandler(void *argStruct){
 
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
-    //free(argStruct);
-    //freeThrdArg(args);
+    freeThrdArg(args);
 
     
     
@@ -333,7 +332,7 @@ void tokenizeFilePtr(fileNode *ptr){
     }
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: freeing currentTok\n", ptr->path);
     free(currentTok);
-    //free(buffer);
+  //  free(buffer);
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: free currentTok\n", ptr->path);
     if(debugTok) printf("\t\tFINISHTOKENIZER: %s\n", ptr->path);
     return;
