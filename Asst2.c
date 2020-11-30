@@ -217,7 +217,8 @@ void tokenizeFilePtr(fileNode *ptr){
     int fileSize = (int)lseek(fd, (size_t)0, SEEK_END);
     lseek(fd, (off_t)0, SEEK_SET);
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: Allocating Buffer\n", ptr->path);
-    char *buffer = (char *)malloc(fileSize);
+    //char *buffer = (char *)malloc(fileSize);
+    char buffer[fileSize];
     //buffer[fileSize] = '\0';
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: Reading info into buffer\n", ptr->path);
     read(fd, (void *)buffer, (size_t)fileSize);
