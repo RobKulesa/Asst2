@@ -201,8 +201,8 @@ void *fileHandler(void *argStruct){
 
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
-    free(argStruct);
-    freeThrdArg(args);
+    //free(argStruct);
+    //freeThrdArg(args);
 
     
     
