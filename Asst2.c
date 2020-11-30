@@ -743,21 +743,18 @@ int main(int argc, char** argv) {
     for(dsPtr = *headPtr; dsPtr->next != NULL; dsPtr = dsPtr->next) {
         for(dsPtr2 = dsPtr->next; dsPtr2!=NULL; dsPtr2 = dsPtr2->next){
             if(debugJSD) printf("Attempting JSD on: %s AND \t%s\n", dsPtr->path, dsPtr2->path);
-            double jsd = jensenShannonDist(dsPtr, dsPtr2);
-            if(jsd > 0.3)
-                printf("\033[0m");
-            else if(jsd > 0.25)
-                printf("\033[0;34m");
-            else if(jsd > 0.2)
-                printf("\033[0;36m");
-            else if(jsd > 0.15)
-                printf("\033[0;32m");
-            else if(jsd > 0.1)
-                printf("\033[0;33m");
-            else
-                printf("\033[0;31m");
-            printf("%f", jsd);
-            printf("\033[0m \"%s\" and \"%s\"\n", dsPtr->path, dsPtr2->path);
+            if(dsPtr->tokCount > 0 && dsPtr2->tokCount > 0){
+                double jsd = jensenShannonDist(dsPtr, dsPtr2);
+                if(jsd > 0.3) printf("\033[0m");
+                else if(jsd > 0.25) printf("\033[0;34m");
+                else if(jsd > 0.2) printf("\033[0;36m");
+                else if(jsd > 0.15) printf("\033[0;32m");
+                else if(jsd > 0.1) printf("\033[0;33m");
+                else printf("\033[0;31m");
+                printf("%f", jsd);
+                printf("\033[0m \"%s\" and \"%s\"\n", dsPtr->path, dsPtr2->path);
+            }
+            
         }
     } 
     if(debugMain)printf("Started step 8\n");
