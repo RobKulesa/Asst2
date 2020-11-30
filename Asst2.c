@@ -333,7 +333,7 @@ void tokenizeFilePtr(fileNode *ptr){
     }
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: freeing currentTok\n", ptr->path);
     free(currentTok);
-    free(buffer);
+    //free(buffer);
     if(debugTok) printf("\t\ttokenizeFilePtr | %s: free currentTok\n", ptr->path);
     if(debugTok) printf("\t\tFINISHTOKENIZER: %s\n", ptr->path);
     return;
