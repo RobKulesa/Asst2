@@ -61,13 +61,13 @@ void fixFileName(char* badFilePath);
 
 void *direcHandler(void *argStruct) {
     //1
-    /*
+    
     thrdArg* args = (thrdArg*) malloc(sizeof(argStruct));
     args->mut = ((thrdArg*) argStruct)->mut;
     args->fileLLHead = ((thrdArg*) argStruct)->fileLLHead;
-    */
-    thrdArg* args = (thrdArg*)argStruct;
-    //args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
+    
+    //thrdArg* args = (thrdArg*)argStruct;
+    args->thrdFilePath = ((thrdArg*) argStruct)->thrdFilePath;
     if(debugDH) printf("direcHandler | %s:\tInitiate\n", args->thrdFilePath);
     if(!goodDirectory(args->thrdFilePath)) {
         printf("Error: direcHandler: %s is an invalid directory path.\n", args->thrdFilePath);
@@ -201,7 +201,7 @@ void *fileHandler(void *argStruct){
 
     if(debugFH) printf("\tfileHandler | %s:\tFINISH\n", args->thrdFilePath);
     pthread_mutex_unlock(args->mut);
-    
+    free(argStruct);
     freeThrdArg(args);
 
     
