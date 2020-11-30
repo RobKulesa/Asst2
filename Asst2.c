@@ -720,7 +720,7 @@ int main(int argc, char** argv) {
     if(debugMain)printf("Starting step 5\n");
     //5. 
     direcHandler((void *)args);
-    if((*headPtr)->next == NULL){
+    if((*headPtr)== NULL){
         printf("Error: Nothing detected\n");
         return 1;
     }

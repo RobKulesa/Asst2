@@ -1,0 +1,53 @@
+Test Case 1: Should exit as only 1 file is found
+|--ReadTest
+    |--test.txt
+
+Test Case 2: A more complex directory with two files with the same name
+|--TestDirec1
+    |--TD1SD1
+        |--TestFile11.txt
+        |--TestFile12.txt
+        |--TestFile14.txt
+    |--TD1SD2
+        |--TestFile13.txt
+        |--TestFile14.txt
+    |--TestFile1.txt
+
+Test Case 3: A simple directory with two files
+|--TestDirec2
+    |--File1.txt
+    |--File2.txt
+
+
+Test Case 4: A simple directory with two files, but both are empty.
+|--TestDirec3
+    |--EmptyFile1.txt
+    |--EmptyFile2.txt
+
+test.txt:
+hi hello hey hello hi
+
+TestFile11.txt:
+This is the first subdirectory file
+
+TestFile12.txt:
+Second Subdirectory file
+
+TestFile13.txt:
+ASDKFLJASDFLKDJ
+
+/TD1SD1/TestFile14.txt:
+hello hello hello
+
+/TD1SD2/TestFile14.txt:
+file File fiLe FiLe SUbDirectory subdirectoryy 
+
+File1.txt:
+Hello SchOol heLLo hello school
+
+File2.txt:
+hello hello hello school school
+
+EmptyFile1.txt:
+
+EmptyFile2.txt:
